@@ -60,4 +60,7 @@ No icon library at v1. Use inline SVG or emoji sparingly. Future: Lucide.
 
 ## To Customize
 
-Edit `DESIGN_TOKENS.json` and this file. Then run `make watch-css` to rebuild.
+Edit `DESIGN_TOKENS.json` and run `make generate-tokens`. This regenerates:
+- app/static/generated/tokens.css (HTMX :root variables)
+- frontend/src/styles/tokens.generated.css (React @theme variables)
+Review and commit both files. The color palette table below should match DESIGN_TOKENS.json values.

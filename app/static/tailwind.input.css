@@ -1,15 +1,5 @@
+@import "generated/tokens.css";
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
-
-:root {
-  --color-primary: #2563eb;
-  --color-primary-hover: #1d4ed8;
-  --color-surface: #ffffff;
-  --color-surface-secondary: #f9fafb;
-  --color-border: #e5e7eb;
-  --color-text: #111827;
-  --color-text-secondary: #6b7280;
-  --font-family: system-ui, -apple-system, sans-serif;
-  --border-radius: 0.5rem;
-}

@@ -1,19 +1,14 @@
 @import "tailwindcss";
+@import "./tokens.generated.css";
 
+/*
+ * Frontend-only tokens that have no entry in DESIGN_TOKENS.json (the source of
+ * truth). Shared design tokens live in ./tokens.generated.css, regenerated via
+ * `make generate-tokens`.
+ */
 @theme {
-  --color-primary: #2563eb;
-  --color-primary-hover: #1d4ed8;
-  --color-surface: #ffffff;
-  --color-surface-secondary: #f9fafb;
-  --color-border: #e5e7eb;
-  --color-text-primary: #111827;
-  --color-text-secondary: #6b7280;
   --color-danger: #dc2626;
   --color-success: #16a34a;
-
-  --font-family-sans: system-ui, -apple-system, sans-serif;
-
-  --radius-lg: 0.5rem;
   --radius-xl: 0.75rem;
 }
 

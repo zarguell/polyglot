@@ -121,6 +121,10 @@ export const api = {
     return request<T>("POST", path, body);
   },
 
+  patch<T>(path: string, body?: unknown): Promise<T> {
+    return request<T>("PATCH", path, body);
+  },
+
   put<T>(path: string, body?: unknown): Promise<T> {
     return request<T>("PUT", path, body);
   },

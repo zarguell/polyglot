@@ -8,9 +8,10 @@ logger = structlog.get_logger()
 
 
 def register(app, settings):
-    """Register WebSocket routes with the FastAPI application."""
-    from app.components.websockets.api import router
+    """Register WebSocket routes. ``app`` is None in the worker process."""
+    if app is not None:
+        from app.components.websockets.api import router
 
-    app.include_router(router, prefix="")
+        app.include_router(router, prefix="")
 
     logger.info("websockets_component_activated")

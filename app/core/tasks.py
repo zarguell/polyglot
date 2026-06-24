@@ -67,6 +67,44 @@ periodic_audit_log_retention = task_app.periodic(
 )(audit_log_retention)
 
 
+def _register_components() -> None:
+    """Call ``register()`` on each installed component for the worker process.
+
+    Mirrors ``app.main._load_components`` but for the Procrastinate worker.
+    The worker has no FastAPI application, so ``app`` is passed as ``None``;
+    component ``register()`` functions guard route registration behind
+    ``if app is not None`` while still executing process-global side effects
+    (task handler registration, registry hooks, etc.).
+
+    Without this, handlers wired inside ``component/__init__.py:register()``
+    are available in the web process but silently missing in the worker.
+    """
+    import importlib
+    import pkgutil
+
+    import app.components as components_pkg
+
+    discovered = [
+        name
+        for _, name, is_pkg in pkgutil.iter_modules(components_pkg.__path__)
+        if is_pkg and name != "__init__"
+    ]
+
+    active = discovered
+    if settings.installed_components is not None:
+        active = [c for c in discovered if c in settings.installed_components]
+
+    for name in active:
+        try:
+            module = importlib.import_module(f"app.components.{name}")
+            if hasattr(module, "register"):
+                module.register(app=None, settings=settings)
+                logger.info("worker_component_registered", name=name)
+        except Exception:
+            logger.exception("worker_component_register_failed", name=name)
+            raise
+
+
 def _discover_task_modules() -> None:
     """Import every module under ``app.tasks`` so task decorators register.
 
@@ -92,6 +130,11 @@ def _discover_task_modules() -> None:
         importlib.import_module(f"app.tasks.{name}")
         logger.debug("task_module_imported", module=name)
 
+
+# Register component hooks (handler registries, task imports) before
+# discovering task modules — some task modules depend on handlers registered
+# by component register() hooks.
+_register_components()
 
 # Import all task modules so their @task_app.task decorators run as a side
 # effect.  This runs after ``task_app`` is defined above, so modules that do

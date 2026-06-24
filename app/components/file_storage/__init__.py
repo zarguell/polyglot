@@ -8,9 +8,10 @@ logger = structlog.get_logger()
 
 
 def register(app, settings):
-    """Register file storage routes with the FastAPI application."""
-    from app.components.file_storage.api import router
+    """Register file storage routes. ``app`` is None in the worker process."""
+    if app is not None:
+        from app.components.file_storage.api import router
 
-    app.include_router(router, prefix="")
+        app.include_router(router, prefix="")
 
     logger.info("file_storage_component_activated")

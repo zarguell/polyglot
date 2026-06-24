@@ -12,7 +12,10 @@ from starlette.requests import Request
 from app.api.admin import router as admin_router
 from app.api.auth import router as auth_router
 from app.api.public import router as public_router
+from app.api.sse import router as sse_router
 from app.api.system import router as system_router
+from app.api.ticket_attachments import router as ticket_attachment_router
+from app.api.ticket_routes import router as ticket_router
 from app.core.config import settings
 from app.core.errors import AppError, app_error_handler, generic_exception_handler
 from app.core.logging import setup_logging
@@ -142,6 +145,9 @@ def create_app() -> FastAPI:
     app.include_router(auth_router, prefix="")
     app.include_router(system_router, prefix="")
     app.include_router(admin_router, prefix="")
+    app.include_router(ticket_router, prefix="")
+    app.include_router(ticket_attachment_router, prefix="")
+    app.include_router(sse_router, prefix="")
 
     return app
 

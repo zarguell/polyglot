@@ -1,0 +1,92 @@
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+
+  "extends": [
+    "config:recommended",
+    ":semanticCommitTypeAll(chore)",
+    ":separateMultipleMajorReleases",
+    "schedule:weekly"
+  ],
+
+  "prConcurrentLimit": 5,
+  "prHourlyLimit": 1,
+
+  "labels": ["dependencies"],
+
+  "packageRules": [
+    {
+      "description": "Group all GitHub Actions into one PR",
+      "matchManagers": ["github-actions"],
+      "groupName": "github-actions",
+      "groupSlug": "gha"
+    },
+    {
+      "description": "Group Python non-major updates into one PR",
+      "matchManagers": ["pep621"],
+      "matchUpdateTypes": ["minor", "patch"],
+      "groupName": "python deps (non-major)",
+      "groupSlug": "python-minor"
+    },
+    {
+      "description": "Separate PRs for major Python dep bumps — requires careful review",
+      "matchManagers": ["pep621"],
+      "matchUpdateTypes": ["major"],
+      "groupName": "python deps (major)"
+    },
+    {
+      "description": "Group frontend npm non-major updates into one PR",
+      "matchManagers": ["npm"],
+      "matchUpdateTypes": ["minor", "patch"],
+      "groupName": "frontend deps (non-major)",
+      "groupSlug": "npm-minor"
+    },
+    {
+      "description": "Separate PRs for major frontend dep bumps",
+      "matchManagers": ["npm"],
+      "matchUpdateTypes": ["major"],
+      "groupName": "frontend deps (major)"
+    },
+    {
+      "description": "Separate React monorepo major bumps — high blast radius",
+      "matchPackageNames": ["react", "react-dom", "@types/react", "@types/react-dom"],
+      "matchUpdateTypes": ["major"],
+      "groupName": "react major"
+    },
+    {
+      "description": "Pin Docker tags to digest for reproducibility",
+      "matchManagers": ["docker-compose", "dockerfile"],
+      "matchDatasources": ["docker"],
+      "pinDigests": false
+    },
+    {
+      "description": "Auto-merge GitHub Actions patch updates — low risk",
+      "matchManagers": ["github-actions"],
+      "matchUpdateTypes": ["patch"],
+      "automerge": true,
+      "automergeType": "pr",
+      "requiredStatusChecks": []
+    },
+    {
+      "description": "Boilerplate compose fragments — batch into low-priority group",
+      "matchFileNames": ["boilerplate/**"],
+      "groupName": "boilerplate templates",
+      "groupSlug": "boilerplate",
+      "priority": -10
+    }
+  ],
+
+  "vulnerabilityAlerts": {
+    "labels": ["security"],
+    "automerge": true
+  },
+
+  "ignoreDeps": [
+    "psycopg2-binary",
+    "psycopg-binary"
+  ],
+
+  "lockFileMaintenance": {
+    "enabled": true,
+    "schedule": ["before 5am on Monday"]
+  }
+}

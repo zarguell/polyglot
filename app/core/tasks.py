@@ -65,3 +65,35 @@ periodic_audit_log_retention = task_app.periodic(
     cron="0 3 * * *",
     task_name="maintenance.audit_log_retention",
 )(audit_log_retention)
+
+
+def _discover_task_modules() -> None:
+    """Import every module under ``app.tasks`` so task decorators register.
+
+    Procrastinate tasks register via the side effect of importing a module that
+    contains ``@task_app.task(...)``.  Without auto-discovery a developer must
+    remember to add ``import app.tasks.foo`` somewhere; forgetting that makes
+    the task silently absent from the worker with no error.
+
+    Scanning ``app/tasks/`` and importing each module removes that footgun: drop
+    a ``.py`` file in, and it is registered automatically.  Import failures are
+    *not* swallowed — a broken task module fails loudly at worker/app startup
+    instead of vanishing silently.  This mirrors the component auto-discovery in
+    ``app.main._load_components``.
+    """
+    import importlib
+    import pkgutil
+
+    import app.tasks as tasks_pkg
+
+    for _finder, name, _is_pkg in pkgutil.iter_modules(tasks_pkg.__path__):
+        if name == "__init__":
+            continue
+        importlib.import_module(f"app.tasks.{name}")
+        logger.debug("task_module_imported", module=name)
+
+
+# Import all task modules so their @task_app.task decorators run as a side
+# effect.  This runs after ``task_app`` is defined above, so modules that do
+# ``from app.core.tasks import task_app`` resolve correctly.
+_discover_task_modules()

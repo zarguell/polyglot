@@ -82,6 +82,7 @@ async def create_entity(db: AsyncSession, user_id: uuid.UUID, *, name: str) -> M
 ### New Task (with periodic trigger)
 ```python
 # app/tasks/my_tasks.py
+# No need to import this module anywhere — it is auto-discovered from app/tasks/.
 from app.core.tasks import task_app
 
 @task_app.task(name="my_app.my_action")
@@ -172,6 +173,14 @@ Polyglot is an opinionated secure application boilerplate. It provides authentic
 7. All tables should have `created_at` timestamps.
 
 ## Task Queue Rules
+
+> **Task auto-discovery:** Modules in `app/tasks/` are imported automatically
+> when `task_app` loads (see `_discover_task_modules` in `app/core/tasks.py`).
+> Drop a `.py` file in `app/tasks/` and its `@task_app.task(...)` decorators
+> register with the worker — **no manual `import` line needed**. (Previously you
+> had to add `import app.tasks.foo` to `app/tasks/__init__.py`; forgetting that
+> made the task silently vanish with no error.) Import failures now fail loudly
+> at startup instead of silently disappearing.
 
 1. Use Procrastinate for jobs longer than a normal request/response cycle (>200ms).
 2. Name tasks with a prefix: `domain.action` (e.g., `billing.send_invoice`).

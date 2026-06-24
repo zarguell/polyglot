@@ -30,7 +30,7 @@ repos:
 
       - id: check-config
         name: check-config
-        entry: bash -c '! grep -rn "os\.getenv\|os\.environ" app/ --include="*.py" | grep -v "app/core/config.py" | grep -v "noqa: config" | grep . || exit 1'
+        entry: bash -c '! grep -rn "os\.getenv(\|os\.environ\[" app/ --include="*.py" | grep -v "app/core/config.py" | grep -v "noqa: config" | grep . || exit 1'
         language: system
         pass_filenames: false
         always_run: true

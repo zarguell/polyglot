@@ -197,6 +197,79 @@ Polyglot is an opinionated secure application boilerplate. It provides authentic
 4. Components folder: `app/templates/components/` for Jinja partials.
 5. No bare `<script>` tags — use nonce or SRI.
 
+## Row-Level Scoping (beyond `require_permission`)
+
+The built-in ``require_permission(resource, action)`` factory answers **"can this user
+perform this action?"** — but not **"can this user act on THIS specific entity?"**
+For role-scoped access (e.g., "manager approves only their direct reports' timecards"),
+add a service-layer helper and call it from route handlers.  The pattern:
+
+```python
+# app/services/scope.py  — create this file in your app
+from __future__ import annotations
+from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
+from app.models.employee import Employee
+from app.models.timecard import Timecard
+
+async def get_scoped_timecards(
+    db: AsyncSession,
+    user_id: uuid.UUID,
+    *,
+    is_admin: bool = False,
+    can_view_all: bool = False,
+) -> list[Timecard]:
+    """Return timecards the user is allowed to see.
+
+    Admins and users with ``view_all`` permission see everything.
+    Managers see their direct reports' timecards.
+    Employees see only their own.
+    """
+    if is_admin or can_view_all:
+        result = await db.execute(select(Timecard))
+        return list(result.scalars().all())
+
+    # Get the user's employee record to find their reports
+    emp_result = await db.execute(
+        select(Employee).where(Employee.user_id == user_id)
+    )
+    employee = emp_result.scalar_one_or_none()
+    if not employee:
+        return []
+
+    # Manager: show direct reports + self
+    report_ids = [employee.id]
+    if employee.is_manager:
+        reps = await db.execute(
+            select(Employee.id).where(Employee.manager_id == employee.id)
+        )
+        report_ids.extend(r[0] for r in reps.all())
+
+    result = await db.execute(
+        select(Timecard).where(Timecard.employee_id.in_(report_ids))
+    )
+    return list(result.scalars().all())
+```
+
+Then use it in route handlers instead of repeating the filter:
+
+```python
+@router.get("/timecards")
+async def list_timecards(user: CurrentUser, db: DbDeps):
+    can_view_all = await has_permission(db, user, "timecards", "view_all")
+    timecards = await get_scoped_timecards(
+        db, user.id, is_admin=user.is_admin, can_view_all=can_view_all,
+    )
+    ...
+```
+
+**Why not build this into the boilerplate?** Scoping rules are app-specific:
+hierarchy depth (direct reports vs whole org tree), ownership models (solo vs team),
+and override rules (escalation, delegation) differ across every domain.  A generic
+``scope_filter()`` would need to know your org structure, assignment model, and
+override rules — essentially a policy engine.  The recipe above is the reusable
+pattern; adapt the query to your entity relationships.
+
 ## Critical Traps (read these before writing any code)
 
 ### Trap 1: Form body silently consumed by middleware (already fixed)

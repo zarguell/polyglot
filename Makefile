@@ -1,4 +1,4 @@
-.PHONY: up down logs build test test-local lint format migrate new-migration worker shell db-shell seed activate-component install install-hooks watch-css smoke-test check-deps verify-tasks check-config pre-commit dev
+.PHONY: up down logs build test test-local lint format migrate new-migration worker shell db-shell seed activate-component install install-hooks generate-tokens watch-css build-frontend smoke-test check-deps verify-tasks check-config pre-commit dev
 
 # ── Docker ────────────────────────────────────────────────────────
 up:
@@ -70,8 +70,17 @@ install-hooks:
 	@echo "Installing pre-commit hooks..."
 	@which pre-commit 2>/dev/null && pre-commit install && echo "Done." || echo "Install pre-commit: brew install pre-commit (macOS) or pipx install pre-commit"
 
-watch-css:
+watch-css: generate-tokens
 	@tailwindcss -i app/static/tailwind.input.css -o app/static/app.css --watch
+
+# ── Design tokens & frontend build ────────────────────────────────
+# DESIGN_TOKENS.json is the single source of truth. Both frontends consume
+# generated CSS custom properties; regenerate whenever the JSON changes.
+generate-tokens:
+	uv run python scripts/generate_tokens.py
+
+build-frontend: generate-tokens
+	cd frontend && npm run build
 
 # ── Guard Rails ───────────────────────────────────────────────────
 
@@ -82,42 +91,12 @@ check-config:
 	@bash scripts/check_config.sh
 
 check-deps:
-	@echo "Checking dependency resolution..."; \
-	python -c "
-import importlib, sys
-errors = []
-for mod_name in ['app.core.config', 'app.core.db', 'app.core.tasks',
-                 'app.core.auth', 'app.core.security', 'app.core.errors',
-                 'app.core.logging', 'app.core.templates', 'app.main']:
-    try:
-        importlib.import_module(mod_name)
-        print(f'  \u2713 {mod_name}')
-    except Exception as e:
-        errors.append(f'{mod_name}: {e}')
-        print(f'  \u2717 {mod_name}: {e}')
-if errors:
-    sys.exit(1)
-else:
-    print('\n\u2705 All modules resolved')
-"
+	@echo "Checking dependency resolution..."
+	@python scripts/check_deps.py
 
 verify-tasks:
-	@echo "Verifying task registration..."; \
-	python -c "
-import importlib, sys
-errors = []
-for task_mod in ['app.tasks', 'app.core.tasks']:
-    try:
-        importlib.import_module(task_mod)
-        print(f'  \u2713 {task_mod}')
-    except Exception as e:
-        errors.append(f'{task_mod}: {e}')
-        print(f'  \u2717 {task_mod}: {e}')
-if errors:
-    sys.exit(1)
-else:
-    print('\n\u2705 All tasks registered')
-"
+	@echo "Verifying task registration..."
+	@python scripts/verify_tasks.py
 
 pre-commit: lint test-local smoke-test check-deps verify-tasks check-config
 	@echo "✅ All guard rails passed"

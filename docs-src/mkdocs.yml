@@ -1,0 +1,44 @@
+site_name: Polyglot
+site_description: AI-native secure application boilerplate — FastAPI, Postgres, SSO, RBAC, task queue
+site_url: https://zarguell.github.io/polyglot
+repo_url: https://github.com/zarguell/polyglot
+edit_uri: edit/main/docs-src/docs/
+
+theme:
+  name: material
+  palette:
+    primary: indigo
+    accent: blue
+  features:
+    - navigation.instant
+    - navigation.tracking
+    - navigation.expand
+    - navigation.indexes
+    - content.code.copy
+    - content.tabs.link
+
+markdown_extensions:
+  - pymdownx.highlight:
+      anchor_linenums: true
+  - pymdownx.superfences
+  - pymdownx.tabbed:
+      alternate_style: true
+  - admonition
+  - toc:
+      permalink: true
+
+nav:
+  - Home: index.md
+  - Getting Started:
+    - Quick Start: getting-started/quickstart.md
+    - Configuration: getting-started/configuration.md
+    - Authentication Setup: getting-started/auth-setup.md
+    - Template Activation: getting-started/templates.md
+  - Architecture:
+    - Overview: architecture/overview.md
+    - Component System: architecture/components.md
+    - Security Model: architecture/security.md
+  - Authentication:
+    - RBAC: auth/rbac.md
+  - Operations:
+    - Docker Compose: operations/docker.md

@@ -49,18 +49,17 @@ async def list_page(request: Request, user: CurrentUser, db: DbDeps):
     )
 ```
 
-### New Route (form POST — body-safe pattern)
+### New Route (form POST)
 ```python
-# Always parse form data manually to avoid Starlette body-consumption issues.
-# The CSRF middleware caches the raw body in scope["_cached_body"].
-from urllib.parse import parse_qs
+# ``request.form()`` works transparently because ``BodyCacheMiddleware``
+# (outermost middleware layer) reads the ASGI body once and replays it
+# for every downstream consumer.  No manual body parsing needed.
+from fastapi import Form
 
 @router.post("/my-entities")
 async def create_form(request: Request, user: CurrentUser, db: DbDeps):
-    raw = request.scope.get("_cached_body") or await request.body()
-    form = parse_qs(raw.decode()) if raw else {}
-    # form is now a dict of {key: [value, ...]}
-    name = form.get("name", [""])[0]
+    form = await request.form()
+    name = form.get("name", "")
     ...
 ```
 
@@ -191,20 +190,16 @@ Polyglot is an opinionated secure application boilerplate. It provides authentic
 
 ## Critical Traps (read these before writing any code)
 
-### Trap 1: Form body silently consumed by middleware
+### Trap 1: Form body silently consumed by middleware (already fixed)
 
 Starlette's `BaseHTTPMiddleware` creates a new `Request` object per middleware layer.
 If any middleware calls `request.form()` or `request.body()`, it **consumes the ASGI
-receive stream** — downstream handlers get an empty body with no error or warning.
+receive stream** — downstream handlers would get an empty body with no error or warning.
 
-**Always use this pattern in route handlers that receive form data:**
-```python
-raw = request.scope.get("_cached_body") or await request.body()
-form = parse_qs(raw.decode()) if raw else {}
-```
-
-The CSRF middleware caches the body bytes in `scope["_cached_body"]` after it reads
-them. Check the cache first; fall back to `request.body()`.
+**This boilerplate fixes this transparently** via ``BodyCacheMiddleware`` (outermost
+middleware layer). It reads the body once from the original receive stream, caches it,
+and replays it for every downstream consumer.  You can safely use ``request.form()``
+in route handlers without any special pattern.
 
 ### Trap 2: Procrastinate periodic() decorator
 
@@ -227,11 +222,13 @@ Either add `AuditMixin` to your model or ensure it has the audit columns.
 ## Testing Expectations
 
 1. Each new feature needs: unit tests for business logic, integration test for API route.
-2. **Tests run against Postgres in Docker** (via `make test`). SQLite is not used —
-   `func.now()` returns offset-naive datetimes on SQLite but offset-aware on Postgres,
-   causing silent template rendering crashes.
-3. Never use PostgreSQL-only types (`ARRAY`, `JSONB`) unless you're running
-   integration tests against Postgres. Prefer `JSON` (cross-DB compatible).
+2. **All tests run against Postgres in Docker.** There is no SQLite path. The
+   ``conftest.py`` connects via ``TEST_DATABASE_URL`` (defaults to local Docker Postgres).
+   Run ``docker compose up -d postgres`` before ``make test-local``, or use ``make test``
+   to run inside Docker (which handles the dependency automatically).
+3. Never use PostgreSQL-only types (`ARRAY`, `JSONB`) — prefer `JSON` for cross-DB
+   compatibility if you ever need portability, but since we only run on Postgres,
+   this is a style preference, not a crash risk.
 4. Tests must pass before PR.
 
 ## Migration Workflow
@@ -246,19 +243,21 @@ Either add `AuditMixin` to your model or ensure it has the audit columns.
 These Makefile targets verify conventions. Run them before every push.
 
 ```bash
-make pre-commit        # lint + test + smoke-test + check-deps + verify-tasks
+make pre-commit        # lint + test-local + smoke-test + check-deps + verify-tasks + check-config
 make smoke-test        # verify the app boots, pages render, headers present
 make check-deps        # verify all app modules import without errors
 make verify-tasks      # verify all task modules register without errors
+make check-config      # verify no os.getenv outside core/config.py
 ```
 
 | Guard rail | What it enforces | What it catches |
-|---|---|---|
-| `make smoke-test` | App boots, pages render, CSRF works | Silent body drops, Procrastinate API drift, missing deps |
+|---|---|---|---|
+| `make smoke-test` | App boots, pages render, CSRF works, form data persists | Silent body drops, Procrastinate API drift, missing deps |
 | `make check-deps` | All modules import | Missing transitive deps (aiopg, psycopg-binary) |
 | `make verify-tasks` | Task registration | `periodic()` syntax errors |
-| `make lint` | Code style, types | `os.getenv` outside config, type errors |
-| `make test` | Tests pass | Logic errors, model/schema/routes broken |
+| `make check-config` | `os.getenv`/`os.environ` only in `core/config.py` | Config inconsistency, env-var leakage |
+| `make lint` | Code style, types | Type errors, unused imports |
+| `make test` | Tests pass against Postgres in Docker | Logic errors, model/schema/routes broken |
 
 ## Definition of Done
 
@@ -269,7 +268,8 @@ make verify-tasks      # verify all task modules register without errors
 - [ ] Tasks defined (if background work)
 - [ ] Tests pass (`make test`)
 - [ ] Lint and type-check pass (`make lint`)
-- [ ] Guard rails pass (`make pre-commit` or individually `make smoke-test check-deps verify-tasks`)
+- [ ] Guard rails pass (`make pre-commit` or individually `make smoke-test check-deps verify-tasks check-config`)
+- [ ] Pre-commit hooks installed (`pre-commit install` after cloning)
 - [ ] Security rules not violated
 
 ## Available Templates

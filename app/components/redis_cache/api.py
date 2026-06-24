@@ -12,9 +12,9 @@ router = APIRouter(prefix="/api/cache", tags=["cache"])
 @router.get("/status")
 async def cache_status() -> dict:
     """Return cache backend status and hit/miss statistics."""
-    import os
+    from app.core.config import settings
 
-    redis_url = os.getenv("REDIS_URL", "redis://redis:6379/0")
+    redis_url = settings.redis_url
     cache = CacheService(redis_url=redis_url)
 
     available = await cache.ping()

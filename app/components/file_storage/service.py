@@ -81,9 +81,9 @@ class StorageService:
     # ── S3 backend (behind env var gate) ──
 
     async def _store_s3(self, contents: bytes, filename: str, checksum: str) -> str:
-        import os
+        from app.core.config import settings
 
-        bucket = self._s3_bucket or os.getenv("AWS_BUCKET", "")
+        bucket = self._s3_bucket or settings.aws_bucket
         if not bucket:
             raise ValueError("AWS_BUCKET must be set for S3 storage")
 
@@ -100,9 +100,9 @@ class StorageService:
         return key
 
     async def _retrieve_s3(self, storage_path: str) -> bytes | None:
-        import os
+        from app.core.config import settings
 
-        bucket = self._s3_bucket or os.getenv("AWS_BUCKET", "")
+        bucket = self._s3_bucket or settings.aws_bucket
         if not bucket:
             return None
 
@@ -117,9 +117,9 @@ class StorageService:
             return None
 
     async def _delete_s3(self, storage_path: str) -> None:
-        import os
+        from app.core.config import settings
 
-        bucket = self._s3_bucket or os.getenv("AWS_BUCKET", "")
+        bucket = self._s3_bucket or settings.aws_bucket
         if not bucket:
             return
 

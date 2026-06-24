@@ -58,6 +58,20 @@ class Settings(BaseSettings):
     smtp_use_tls: bool = True
     email_from: str = ""
 
+    # Redis Cache (used by the redis_cache component)
+    redis_url: str = "redis://redis:6379/0"
+
+    # Stripe (used by the stripe component)
+    stripe_secret_key: SecretStr | None = None
+    stripe_webhook_secret: SecretStr | None = None
+    stripe_price_id: str = ""
+
+    # File Storage (used by the file_storage component)
+    storage_backend: str = "local"
+    storage_local_path: str = "./storage"
+    aws_bucket: str = ""
+    aws_region: str = "us-east-1"
+
     @field_validator("installed_components", mode="before")
     @classmethod
     def _parse_installed_components(cls, v: str | list[str] | None) -> list[str] | None:

@@ -13,7 +13,6 @@ logger = structlog.get_logger()
 def sync_stripe_customer(user_id: str) -> None:
     """Sync a Polyglot user with their Stripe customer record."""
     import asyncio
-    import os
     import uuid
 
     from sqlalchemy import select
@@ -22,7 +21,8 @@ def sync_stripe_customer(user_id: str) -> None:
     from app.core.db import async_session_factory
 
     async def _sync():
-        if not os.getenv("STRIPE_SECRET_KEY"):
+        from app.core.config import settings
+        if not settings.stripe_secret_key:
             logger.warning("stripe_task_not_configured")
             return
 
@@ -45,7 +45,6 @@ def handle_stripe_event(event_type: str, event_data: dict) -> None:
     """Process a Stripe webhook event asynchronously."""
     import asyncio
     import json
-    import os
 
     from sqlalchemy import select
 
@@ -53,7 +52,8 @@ def handle_stripe_event(event_type: str, event_data: dict) -> None:
     from app.core.db import async_session_factory
 
     async def _handle():
-        if not os.getenv("STRIPE_SECRET_KEY"):
+        from app.core.config import settings
+        if not settings.stripe_secret_key:
             logger.warning("stripe_task_not_configured")
             return
 

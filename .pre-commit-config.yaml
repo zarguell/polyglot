@@ -1,0 +1,36 @@
+# ─────────────────────────────────────────────────────────────────────
+# pre-commit hooks — run before every commit to enforce conventions.
+# Install:  pre-commit install
+# Run once: pre-commit run --all-files
+# ─────────────────────────────────────────────────────────────────────
+repos:
+  - repo: local
+    hooks:
+      - id: ruff
+        name: ruff
+        entry: ruff check .
+        language: system
+        pass_filenames: false
+        always_run: true
+
+      - id: basedpyright
+        name: basedpyright
+        entry: basedpyright
+        language: system
+        pass_filenames: false
+        always_run: true
+
+      - id: smoke-test
+        name: smoke-test
+        entry: bash scripts/smoke_test.sh
+        language: system
+        pass_filenames: false
+        always_run: true
+        stages: [push]
+
+      - id: check-config
+        name: check-config
+        entry: bash -c '! grep -rn "os\.getenv\|os\.environ" app/ --include="*.py" | grep -v "app/core/config.py" | grep -v "noqa: config" | grep . || exit 1'
+        language: system
+        pass_filenames: false
+        always_run: true

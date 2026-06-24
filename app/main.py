@@ -18,6 +18,7 @@ from app.core.errors import AppError, app_error_handler, generic_exception_handl
 from app.core.logging import setup_logging
 from app.core.middleware import (
     AuditContextMiddleware,
+    BodyCacheMiddleware,
     CSRFMiddleware,
     RequestIdMiddleware,
     SecurityHeadersMiddleware,
@@ -106,7 +107,8 @@ def create_app() -> FastAPI:
         same_site="lax",
         https_only=settings.environment != "local",
     )
-    app.add_middleware(SecurityHeadersMiddleware)  # outermost
+    app.add_middleware(SecurityHeadersMiddleware)
+    app.add_middleware(BodyCacheMiddleware)  # outermost — cache body before any BaseHTTPMiddleware
 
     # ── Static files ──
     from pathlib import Path

@@ -20,14 +20,13 @@ router = APIRouter(prefix="/api/files", tags=["files"])
 
 
 def _get_storage_service() -> StorageService:
-    import os
+    from app.core.config import settings
 
-    backend = os.getenv("STORAGE_BACKEND", "local")
     return StorageService(
-        backend=backend,
-        local_path=os.getenv("STORAGE_LOCAL_PATH", "./storage"),
-        s3_bucket=os.getenv("AWS_BUCKET", ""),
-        s3_region=os.getenv("AWS_REGION", "us-east-1"),
+        backend=settings.storage_backend,
+        local_path=settings.storage_local_path,
+        s3_bucket=settings.aws_bucket,
+        s3_region=settings.aws_region,
     )
 
 

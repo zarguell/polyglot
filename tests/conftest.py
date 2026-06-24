@@ -1,6 +1,16 @@
+"""Test configuration — always runs against Postgres in Docker.
+
+Override the database URL with the ``TEST_DATABASE_URL`` environment variable
+(e.g. ``TEST_DATABASE_URL=postgresql+asyncpg://user:pass@host:5432/db``).
+
+The ``setup_db`` fixture creates all tables before each test and drops them
+after, so every test starts with a clean schema.
+"""
+
 from __future__ import annotations
 
 import asyncio
+import os
 from collections.abc import AsyncGenerator
 
 import pytest
@@ -12,10 +22,14 @@ from app.api.deps import get_db
 from app.core.config import settings
 from app.main import SESSION_COOKIE_NAME, create_app
 
-# ── SQLite for fast unit/integration tests ──
-TEST_DATABASE_URL = "sqlite+aiosqlite:///./test.db"
+# Default: connect to the local Docker Postgres (``make up`` or ``docker compose up -d postgres``).
+# Override with TEST_DATABASE_URL env var for CI or custom setups.
+TEST_DATABASE_URL = os.getenv(
+    "TEST_DATABASE_URL",
+    "postgresql+asyncpg://polyglot:polyglot@localhost:5432/polyglot",
+)
 
-test_engine = create_async_engine(TEST_DATABASE_URL, echo=False)
+test_engine = create_async_engine(TEST_DATABASE_URL, echo=False, pool_pre_ping=True)
 TestSessionLocal = async_sessionmaker(
     test_engine,
     class_=AsyncSession,

@@ -15,12 +15,12 @@ router = APIRouter(prefix="/api/stripe", tags=["stripe"])
 
 
 def _get_stripe_service() -> StripeService:
-    import os
+    from app.core.config import settings
 
     return StripeService(
-        secret_key=os.getenv("STRIPE_SECRET_KEY", ""),
-        webhook_secret=os.getenv("STRIPE_WEBHOOK_SECRET", ""),
-        price_id=os.getenv("STRIPE_PRICE_ID", ""),
+        secret_key=settings.stripe_secret_key.get_secret_value() if settings.stripe_secret_key else "",
+        webhook_secret=settings.stripe_webhook_secret.get_secret_value() if settings.stripe_webhook_secret else "",
+        price_id=settings.stripe_price_id,
     )
 
 

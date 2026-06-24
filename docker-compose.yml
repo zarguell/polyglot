@@ -44,5 +44,18 @@ services:
     volumes:
       - .:/app
 
+  test:
+    build: .
+    command: ["/bin/sh", "-c", "pytest -v --tb=short 2>&1"]
+    environment:
+      ENVIRONMENT: test
+      DATABASE_URL: postgresql+asyncpg://polyglot:polyglot@postgres:5432/polyglot
+      SECRET_KEY: test-secret-key-that-is-at-least-32-char-long
+      TEST_DATABASE_URL: postgresql+asyncpg://polyglot:polyglot@postgres:5432/polyglot
+    depends_on:
+      postgres:
+        condition: service_healthy
+    profiles: ["ci"]
+
 volumes:
   pgdata:

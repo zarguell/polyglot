@@ -3,7 +3,7 @@ from __future__ import annotations
 import uuid
 from datetime import UTC, datetime
 
-from sqlalchemy import DateTime, ForeignKey, MetaData, Uuid, event, func
+from sqlalchemy import DateTime, ForeignKey, MetaData, Uuid, event
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
 
 NAMING_CONVENTION = {
@@ -48,13 +48,13 @@ class AuditMixin:
 
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
-        server_default=func.now(),
+        default=utcnow,
         nullable=False,
     )
     updated_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
-        server_default=func.now(),
-        onupdate=func.now(),
+        default=utcnow,
+        onupdate=utcnow,
         nullable=False,
     )
     created_by_user_id: Mapped[uuid.UUID | None] = mapped_column(

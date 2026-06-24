@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import os
 from datetime import UTC, datetime, timedelta
 from typing import Annotated
 
@@ -21,7 +22,10 @@ from app.services.rbac_service import (
     revoke_role,
 )
 
-TEST_DATABASE_URL = "sqlite+aiosqlite:///./test.db"
+TEST_DATABASE_URL = os.getenv(
+    "TEST_DATABASE_URL",
+    "postgresql+asyncpg://polyglot:polyglot@localhost:5432/polyglot",
+)
 
 
 @pytest.mark.asyncio

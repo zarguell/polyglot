@@ -1,9 +1,6 @@
-.PHONY: up down logs build test lint format migrate new-migration worker shell db-shell seed activate-component install watch-css smoke-test check-deps verify-tasks dev
+.PHONY: up down logs build test test-local lint format migrate new-migration worker shell db-shell seed activate-component install install-hooks watch-css smoke-test check-deps verify-tasks check-config pre-commit dev
 
-# ── Docker (REQUIRED for all development) ──────────────────────────
-# Do NOT run ``pytest``, ``alembic``, or ``uvicorn`` outside Docker.
-# Use ``make dev`` for local development (runs all backing services).
-
+# ── Docker ────────────────────────────────────────────────────────
 up:
 	docker compose up --build -d
 
@@ -16,22 +13,22 @@ logs:
 build:
 	docker compose build
 
-# ── Development server (local, requires ``up`` for Postgres) ──────
+# ── Dev server (requires Postgres from ``up``) ────────────────────
 dev:
 	uvicorn app.main:app --reload --port 8000
 
-# ── Testing (runs against Postgres in Docker) ─────────────────────
+# ── Testing (Postgres only — no SQLite) ───────────────────────────
+# ``make test`` runs inside Docker against Postgres (CI path).
+# ``make test-local`` runs locally against Docker Postgres on localhost.
+# Start postgres first: ``docker compose up -d postgres``
 test:
+	docker compose --profile ci run --rm test
+
+test-local:
 	pytest
 
 test-coverage:
 	pytest --cov=app --cov-report=term-missing
-
-test-unit:
-	pytest tests/unit
-
-test-integration:
-	pytest tests/integration
 
 # ── Lint & Format ────────────────────────────────────────────────
 lint:
@@ -41,7 +38,7 @@ lint:
 format:
 	ruff format .
 
-# ── Database (requires ``up``) ────────────────────────────────────
+# ── Database ──────────────────────────────────────────────────────
 migrate:
 	alembic upgrade head
 
@@ -69,62 +66,59 @@ activate-component:
 install:
 	uv sync
 
+install-hooks:
+	cp .pre-commit-config.yaml .git/hooks/pre-commit
+	chmod +x .git/hooks/pre-commit
+	@echo "Pre-commit hooks installed."
+
 watch-css:
 	@tailwindcss -i app/static/tailwind.input.css -o app/static/app.css --watch
 
-# ── Guard Rails (machine-enforced conventions) ────────────────────
+# ── Guard Rails ───────────────────────────────────────────────────
 
-# smoke-test: verify the app boots, pages render, and security headers are present.
-# Run BEFORE every commit. Fails if the server isn't running.
 smoke-test:
-	@echo "Starting smoke tests..."
-	@bash scripts/smoke_test.sh
+	@echo "Starting smoke tests..."; bash scripts/smoke_test.sh
 
-# check-deps: verify all dependencies resolve by importing every app module.
-# Catches missing transitive deps (aiopg, psycopg-binary, etc.).
+check-config:
+	@bash scripts/check_config.sh
+
 check-deps:
-	@echo "Checking dependency resolution..."
-	@python -c "
-import importlib, pkgutil, sys
+	@echo "Checking dependency resolution..."; \
+	python -c "
+import importlib, sys
 errors = []
-# Import all top-level app modules
 for mod_name in ['app.core.config', 'app.core.db', 'app.core.tasks',
                  'app.core.auth', 'app.core.security', 'app.core.errors',
                  'app.core.logging', 'app.core.templates', 'app.main']:
     try:
         importlib.import_module(mod_name)
-        print(f'  ✓ {mod_name}')
+        print(f'  \u2713 {mod_name}')
     except Exception as e:
         errors.append(f'{mod_name}: {e}')
-        print(f'  ✗ {mod_name}: {e}')
+        print(f'  \u2717 {mod_name}: {e}')
 if errors:
-    print(f'\n❌ {len(errors)} module(s) failed to import')
     sys.exit(1)
 else:
-    print('\n✅ All modules resolved')
+    print('\n\u2705 All modules resolved')
 "
 
-# verify-tasks: import all task modules to check for registration errors.
-# Catches Procrastinate API drift (e.g., periodic() syntax changes).
 verify-tasks:
-	@echo "Verifying task registration..."
-	@python -c "
+	@echo "Verifying task registration..."; \
+	python -c "
 import importlib, sys
 errors = []
 for task_mod in ['app.tasks', 'app.core.tasks']:
     try:
         importlib.import_module(task_mod)
-        print(f'  ✓ {task_mod}')
+        print(f'  \u2713 {task_mod}')
     except Exception as e:
         errors.append(f'{task_mod}: {e}')
-        print(f'  ✗ {task_mod}: {e}')
+        print(f'  \u2717 {task_mod}: {e}')
 if errors:
-    print(f'\n❌ Task registration failed')
     sys.exit(1)
 else:
-    print('\n✅ All tasks registered')
+    print('\n\u2705 All tasks registered')
 "
 
-# pre-commit: run ALL guard rails. Execute before every push.
-pre-commit: lint test smoke-test check-deps verify-tasks
+pre-commit: lint test-local smoke-test check-deps verify-tasks check-config
 	@echo "✅ All guard rails passed"

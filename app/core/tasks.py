@@ -3,7 +3,8 @@ from __future__ import annotations
 from datetime import UTC
 
 import structlog
-from procrastinate import AiopgConnector, App
+from procrastinate import App
+from procrastinate.contrib.aiopg import AiopgConnector
 
 from app.core.config import settings
 

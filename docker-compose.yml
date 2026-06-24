@@ -33,7 +33,7 @@ services:
 
   worker:
     build: .
-    command: procrastinate --app app.core.tasks.task_app worker --wait
+    command: ["/app/.venv/bin/procrastinate", "--app", "app.core.tasks.task_app", "worker", "--wait"]
     environment:
       ENVIRONMENT: local
       DATABASE_URL: postgresql+asyncpg://polyglot:polyglot@postgres:5432/polyglot

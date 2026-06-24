@@ -69,6 +69,6 @@ def process_webhook_event(event_id: str) -> None:
 
 
 def _get_registry_sync() -> WebhookRegistry:
-    import os
+    from app.core.config import settings
 
-    return WebhookRegistry(default_secret=os.getenv("WEBHOOK_SECRET_DEFAULT", ""))
+    return WebhookRegistry(default_secret=settings.webhook_secret_default)

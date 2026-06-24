@@ -72,6 +72,9 @@ class Settings(BaseSettings):
     aws_bucket: str = ""
     aws_region: str = "us-east-1"
 
+    # Webhooks (used by the inbound_webhooks component)
+    webhook_secret_default: str = ""
+
     @field_validator("installed_components", mode="before")
     @classmethod
     def _parse_installed_components(cls, v: str | list[str] | None) -> list[str] | None:

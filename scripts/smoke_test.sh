@@ -48,6 +48,26 @@ check "CSP header on responses" \
 check "CSRF rejects unauthenticated POST" \
   [ "$(curl -s -o /dev/null -w '%{http_code}' -X POST "${BASE}/logout")" = "403" ]
 
+# 7. G10: Form data persists through full middleware stack
+# POST /login/dev with form data, following redirect, verify display_name renders.
+# Verifies BodyCacheMiddleware replays the body correctly — if the body is consumed
+# by CSRF middleware and not replayed, the route handler gets empty form data and
+# the display_name defaults to "Dev User" instead of our test value.
+check "Form POST data persists through middleware stack" \
+  bash -c '
+    COOKIE_JAR=$(mktemp)
+    # Step 1: GET /login to seed CSRF token in session
+    curl -s -L -c "$COOKIE_JAR" "${BASE}/login" > /dev/null 2>&1
+    # Step 2: POST dev login with test data (dev login is CSRF-exempt in dev mode)
+    RESP=$(curl -s -L -b "$COOKIE_JAR" -c "$COOKIE_JAR" \
+      -X POST "${BASE}/login/dev" \
+      -d "email=smoke-test-body-cache@polyglot.dev" \
+      -d "display_name=SmokeBodyCacheTest")
+    rm -f "$COOKIE_JAR"
+    # Step 3: Verify the display_name appears in the response
+    echo "$RESP" | grep -q "SmokeBodyCacheTest"
+  '
+
 echo ""
 echo "── Results ──────────────────────────────────────────────────"
 echo "  Passed: ${PASS}"

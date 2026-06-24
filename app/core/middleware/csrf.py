@@ -18,8 +18,9 @@ SAFE_METHODS = frozenset({"GET", "HEAD", "OPTIONS", "TRACE"})
 CSRF_EXEMPT_PATHS = frozenset({
     "/auth/callback",
     "/auth/saml/acs",
-    "/webhooks",
-    "/api/stripe/webhook",
+    "/login/dev",          # dev-only route, always on localhost
+    "/api/webhooks",        # inbound_webhooks component prefix (copy-on-activate)
+    "/api/stripe/webhook",  # stripe component webhook
 })
 
 

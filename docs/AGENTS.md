@@ -226,9 +226,10 @@ Either add `AuditMixin` to your model or ensure it has the audit columns.
    ``conftest.py`` connects via ``TEST_DATABASE_URL`` (defaults to local Docker Postgres).
    Run ``docker compose up -d postgres`` before ``make test-local``, or use ``make test``
    to run inside Docker (which handles the dependency automatically).
-3. Never use PostgreSQL-only types (`ARRAY`, `JSONB`) — prefer `JSON` for cross-DB
-   compatibility if you ever need portability, but since we only run on Postgres,
-   this is a style preference, not a crash risk.
+3. Prefer `JSON` over `JSONB`/`ARRAY` — `JSON` is more portable and sufficient for
+   most use cases. Only use `JSONB` if you need Postgres-specific query operators
+   (e.g., `@>`, `?`). Since all environments run Postgres, either works — but `JSON`
+   is the safe default.
 4. Tests must pass before PR.
 
 ## Migration Workflow

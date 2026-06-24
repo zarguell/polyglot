@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import os
 import uuid
 
 import structlog
@@ -24,7 +23,8 @@ _registry: WebhookRegistry | None = None
 def _get_registry() -> WebhookRegistry:
     global _registry
     if _registry is None:
-        _registry = WebhookRegistry(default_secret=os.getenv("WEBHOOK_SECRET_DEFAULT", ""))
+        from app.core.config import settings
+        _registry = WebhookRegistry(default_secret=settings.webhook_secret_default)
     return _registry
 
 

@@ -8,7 +8,7 @@
 set -euo pipefail
 
 # Only flag actual os.getenv() calls (with opening paren), not docstring references.
-VIOLATIONS=$(grep -rn "os\.getenv(" app/ --include="*.py" \
+VIOLATIONS=$(grep -rn "os\.getenv(\|os\.environ\[" app/ --include="*.py" \
   | grep -v "app/core/config.py" \
   | grep -v "noqa: config" \
   || true)

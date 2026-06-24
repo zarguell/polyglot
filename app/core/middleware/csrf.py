@@ -15,7 +15,12 @@ from starlette.requests import Request
 from starlette.responses import Response
 
 SAFE_METHODS = frozenset({"GET", "HEAD", "OPTIONS", "TRACE"})
-CSRF_EXEMPT_PATHS = frozenset({"/auth/callback", "/auth/saml/acs", "/webhooks"})
+CSRF_EXEMPT_PATHS = frozenset({
+    "/auth/callback",
+    "/auth/saml/acs",
+    "/webhooks",
+    "/api/stripe/webhook",
+})
 
 
 def generate_csrf_token() -> str:
@@ -46,7 +51,8 @@ class CSRFMiddleware(BaseHTTPMiddleware):
         # Fall back to form field (for non-JS form submissions)
         if not candidate:
             content_type = request.headers.get("content-type", "")
-            if "application/x-www-form-urlencoded" in content_type:
+            if "application/x-www-form-urlencoded" in content_type or \
+               "multipart/form-data" in content_type:
                 form = await request.form()
                 candidate = form.get("csrf_token", "")
 

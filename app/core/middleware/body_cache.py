@@ -40,19 +40,17 @@ class BodyCacheMiddleware:
                 more_body = msg.get("more_body", False)
 
         body = b"".join(chunks)
-        scope["_body_cache"] = body
 
-        # Build a receive that replays the cached body, then sends disconnect
-        body_iter = iter([body, b""])
-
+        # Build a receive that ALWAYS returns the full cached body.
+        # Each BaseHTTPMiddleware layer creates a new Request object, and each
+        # Request calls this receive independently.  Using a one-shot iterator
+        # would only serve the first consumer — subsequent consumers (other
+        # middleware layers, the route handler) would get an empty body.
         async def cached_receive() -> dict:
-            try:
-                return {
-                    "type": "http.request",
-                    "body": next(body_iter),
-                    "more_body": False,
-                }
-            except StopIteration:
-                return {"type": "http.disconnect"}
+            return {
+                "type": "http.request",
+                "body": body,
+                "more_body": False,
+            }
 
         await self.app(scope, cached_receive, send)

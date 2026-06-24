@@ -67,9 +67,8 @@ install:
 	uv sync
 
 install-hooks:
-	cp .pre-commit-config.yaml .git/hooks/pre-commit
-	chmod +x .git/hooks/pre-commit
-	@echo "Pre-commit hooks installed."
+	@echo "Installing pre-commit hooks..."
+	@which pre-commit 2>/dev/null && pre-commit install && echo "Done." || echo "Install pre-commit: brew install pre-commit (macOS) or pipx install pre-commit"
 
 watch-css:
 	@tailwindcss -i app/static/tailwind.input.css -o app/static/app.css --watch

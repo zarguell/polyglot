@@ -160,7 +160,7 @@ async def test_require_permission_dependency_grants_access(db_session):
     from app.api.deps import get_db
     from app.core.config import settings
     from app.core.security import generate_session_token, hash_token
-    from app.main import create_app
+    from app.main import SESSION_COOKIE_NAME, create_app
     from app.models.auth_session import AuthSession
 
     engine = create_async_engine(TEST_DATABASE_URL, echo=False)
@@ -217,7 +217,7 @@ async def test_require_permission_dependency_grants_access(db_session):
 
     transport = ASGITransport(app=app)
     async with AsyncClient(transport=transport, base_url="http://test") as ac:
-        ac.cookies.set("polyglot_session", signed)
+        ac.cookies.set(SESSION_COOKIE_NAME, signed)
         ac.headers["X-CSRFToken"] = "test-csrf-token"
         resp = await ac.get("/rbac-test/test/granted")
         assert resp.status_code == 200, f"Unexpected {resp.status_code}: {resp.text}"
@@ -236,7 +236,7 @@ async def test_require_permission_dependency_rejects_without_permission(db_sessi
     from app.api.deps import get_db
     from app.core.config import settings
     from app.core.security import generate_session_token, hash_token
-    from app.main import create_app
+    from app.main import SESSION_COOKIE_NAME, create_app
     from app.models.auth_session import AuthSession
 
     engine = create_async_engine(TEST_DATABASE_URL, echo=False)
@@ -285,7 +285,7 @@ async def test_require_permission_dependency_rejects_without_permission(db_sessi
 
     transport = ASGITransport(app=app)
     async with AsyncClient(transport=transport, base_url="http://test") as ac:
-        ac.cookies.set("polyglot_session", signed)
+        ac.cookies.set(SESSION_COOKIE_NAME, signed)
         ac.headers["X-CSRFToken"] = "test-csrf-token"
         resp = await ac.get("/rbac-test/test/denied")
         assert resp.status_code == 403, f"Unexpected {resp.status_code}: {resp.text}"

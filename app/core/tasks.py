@@ -1,3 +1,17 @@
+"""Procrastinate task_app and periodic task definitions.
+
+Usage:
+    @task_app.task(name="domain.action")
+    def my_task(...):
+        ...
+
+    # Periodic triggers must wrap an already-registered task (Procrastinate 2.6+ API).
+    periodic_my_task = task_app.periodic(
+        cron="0 * * * *",
+        task_name="domain.action",
+    )(my_task)
+"""
+
 from __future__ import annotations
 
 from datetime import UTC
@@ -45,7 +59,9 @@ def audit_log_retention(retention_days: int = 90) -> None:
     asyncio.run(_prune())
 
 
-@task_app.periodic(cron="0 3 * * *")
-def periodic_audit_log_retention() -> None:
-    """Wrapper for the cron-scheduled version."""
-    audit_log_retention.defer(retention_days=90)
+# Procrastinate 2.6+: periodic() wraps an already-registered task (has .name attr).
+# The old pattern of decorating a plain wrapper function no longer works.
+periodic_audit_log_retention = task_app.periodic(
+    cron="0 3 * * *",
+    task_name="maintenance.audit_log_retention",
+)(audit_log_retention)

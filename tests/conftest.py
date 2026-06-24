@@ -10,7 +10,7 @@ from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_asyn
 
 from app.api.deps import get_db
 from app.core.config import settings
-from app.main import create_app
+from app.main import SESSION_COOKIE_NAME, create_app
 
 # ── SQLite for fast unit/integration tests ──
 TEST_DATABASE_URL = "sqlite+aiosqlite:///./test.db"
@@ -91,7 +91,7 @@ async def auth_client(client: AsyncClient, db_session: AsyncSession) -> AsyncCli
     data = base64.b64encode(json.dumps(session_data).encode("utf-8"))
     signer = TimestampSigner(settings.secret_key.get_secret_value())
     signed = signer.sign(data).decode("utf-8")
-    client.cookies.set("polyglot_session", signed)
+    client.cookies.set(SESSION_COOKIE_NAME, signed)
     # Store CSRF token for test use
     client.headers["X-CSRFToken"] = "test-csrf-token"
     return client

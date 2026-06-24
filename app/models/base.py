@@ -78,7 +78,6 @@ def _audit_set_actor(
     target: object,
 ) -> None:
     """Populate ``created_by_user_id`` / ``updated_by_user_id`` from context-var."""
-    # Avoid circular import: import lazily
     from app.core.context import get_current_actor  # noqa: PLC0415
 
     actor_str = get_current_actor()
@@ -90,9 +89,12 @@ def _audit_set_actor(
     except (ValueError, TypeError):
         return
 
-    if not target.created_by_user_id:  # type: ignore[union-attr]
-        target.created_by_user_id = actor_id  # type: ignore[union-attr]
-    target.updated_by_user_id = actor_id  # type: ignore[union-attr]
+    # Use hasattr guards so models that extend Base directly (without AuditMixin)
+    # don't crash on insert/update.
+    if hasattr(target, "created_by_user_id") and not target.created_by_user_id:
+        target.created_by_user_id = actor_id
+    if hasattr(target, "updated_by_user_id"):
+        target.updated_by_user_id = actor_id
 
 
 event.listen(Base, "before_insert", _audit_set_actor, propagate=True)

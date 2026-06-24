@@ -27,5 +27,6 @@ async def test_csrf_protection(client):
 async def test_csrf_token_in_session(client):
     """GET request seeds a CSRF token in the session."""
     resp = await client.get("/")
-    cookie = resp.cookies.get("polyglot_session")
+    from app.main import SESSION_COOKIE_NAME
+    cookie = resp.cookies.get(SESSION_COOKIE_NAME)
     assert cookie is not None

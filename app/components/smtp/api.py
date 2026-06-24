@@ -7,7 +7,7 @@ from fastapi import APIRouter, Depends
 
 from app.api.deps import CurrentUser
 from app.components.smtp.schemas import EmailSchema
-from app.components.smtp.service import EmailService
+from app.components.smtp.service import EmailService, email_service_from_settings
 
 logger = structlog.get_logger()
 
@@ -15,17 +15,8 @@ router = APIRouter(prefix="/api/email", tags=["email"])
 
 
 def _get_email_service() -> EmailService:
-    """Dependency: create EmailService from settings env vars."""
-    import os
-
-    return EmailService(
-        host=os.getenv("SMTP_HOST", ""),
-        port=int(os.getenv("SMTP_PORT", "587")),
-        user=os.getenv("SMTP_USER", ""),
-        password=os.getenv("SMTP_PASSWORD", ""),
-        use_tls=os.getenv("SMTP_USE_TLS", "true").lower() == "true",
-        from_addr=os.getenv("EMAIL_FROM", ""),
-    )
+    """Dependency: create EmailService from application settings."""
+    return email_service_from_settings()
 
 
 @router.post("/test", tags=["email"])

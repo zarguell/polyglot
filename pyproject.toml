@@ -21,6 +21,14 @@ dependencies = [
     "aiosqlite>=0.20,<1",
     "python-multipart>=0.0,<1",
     "cryptography>=44,<45",
+    # Procrastinate dependencies (not auto-installed on macOS)
+    "aiopg>=1.4,<2",
+    "psycopg2-binary>=2.9,<3",
+    "psycopg-binary>=3.2,<4",
+    # SMTP component
+    "aiosmtplib>=2.0,<3",
+    # Stripe component
+    "stripe>=9.0,<10",
 ]
 
 [project.optional-dependencies]

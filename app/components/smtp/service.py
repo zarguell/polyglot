@@ -19,7 +19,7 @@ class EmailService:
 
     def __init__(
         self,
-        host: str,
+        host: str = "",
         port: int = 587,
         user: str = "",
         password: str = "",
@@ -106,3 +106,22 @@ class EmailService:
         env = Environment(loader=FileSystemLoader(str(template_dir)))
         tmpl = env.get_template(name)
         return tmpl.render(**context)
+
+
+def email_service_from_settings() -> EmailService:
+    """Build an EmailService from the application Settings singleton.
+
+    Use this factory in route handlers and tasks instead of reading
+    ``os.getenv`` directly — keeps all configuration in the pydantic
+    ``Settings`` class.
+    """
+    from app.core.config import settings  # noqa: PLC0415
+
+    return EmailService(
+        host=settings.smtp_host,
+        port=settings.smtp_port,
+        user=settings.smtp_user,
+        password=settings.smtp_password.get_secret_value() if settings.smtp_password else "",
+        use_tls=settings.smtp_use_tls,
+        from_addr=settings.email_from,
+    )

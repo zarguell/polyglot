@@ -50,6 +50,14 @@ class Settings(BaseSettings):
     # Components (comma-separated in .env, e.g. "webhooks,smtp,totp_mfa")
     installed_components: list[str] | None = None
 
+    # SMTP (used by the smtp component)
+    smtp_host: str = ""
+    smtp_port: int = 587
+    smtp_user: str = ""
+    smtp_password: SecretStr | None = None
+    smtp_use_tls: bool = True
+    email_from: str = ""
+
     @field_validator("installed_components", mode="before")
     @classmethod
     def _parse_installed_components(cls, v: str | list[str] | None) -> list[str] | None:

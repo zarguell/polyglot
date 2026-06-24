@@ -27,6 +27,8 @@ from app.core.security import generate_nonce
 
 logger = structlog.get_logger()
 
+SESSION_COOKIE_NAME = f"{settings.app_name.lower().replace(' ', '_')}_session"
+
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -99,7 +101,7 @@ def create_app() -> FastAPI:
     app.add_middleware(  # Session wraps outside CSRF
         SessionMiddleware,  # → request.session available in CSRF
         secret_key=settings.secret_key.get_secret_value(),
-        session_cookie="polyglot_session",
+        session_cookie=SESSION_COOKIE_NAME,
         max_age=settings.session_max_age_seconds,
         same_site="lax",
         https_only=settings.environment != "local",

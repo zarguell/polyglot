@@ -23,3 +23,4 @@ app/static/react/
 *.so
 *.egg-info/
 docs-src/site/
+.omo/

@@ -100,6 +100,7 @@ polyglot-stack/
 | `make migrate` | Apply DB migrations |
 | `make new-migration` | Generate a migration |
 | `make seed` | Seed dev data |
+| `make generate-tokens` | Regenerate design tokens from DESIGN_TOKENS.json |
 | `make activate-component COMPONENT=<name>` | Activate a template |
 
 ## Adding Business Logic

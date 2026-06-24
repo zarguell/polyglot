@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import hmac
 import os
+from typing import Any
 
 from starlette.middleware.base import BaseHTTPMiddleware, RequestResponseEndpoint
 from starlette.requests import Request
@@ -26,6 +27,38 @@ CSRF_EXEMPT_PATHS = frozenset({
 
 def generate_csrf_token() -> str:
     return os.urandom(32).hex()
+
+
+class CSRFTokenSessionMiddleware:
+    """Pure ASGI middleware that seeds ``csrf_token`` into ``scope["session"]``.
+
+    Unlike ``BaseHTTPMiddleware`` (which wraps the scope in an internal
+    ``_CachedRequest``/``Request`` proxy), this middleware operates directly
+    on the ASGI ``scope`` dict — the **same** object that
+    ``SessionMiddleware`` reads when serializing the response cookie.
+
+    This guarantees the token lands in the session cookie even when the
+    Jinja ``csrf_token()`` function runs inside a ``BaseHTTPMiddleware``
+    ``Request`` whose scope divergence could otherwise lose the write,
+    and even for responses that never render a template at all.
+
+    **Ordering**: must be placed **inside** ``SessionMiddleware`` so that
+    ``scope["session"]`` is populated before this middleware runs.
+    """
+
+    def __init__(self, app: Any) -> None:
+        self.app = app
+
+    async def __call__(self, scope: Any, receive: Any, send: Any) -> None:
+        if scope["type"] != "http":
+            await self.app(scope, receive, send)
+            return
+
+        session = scope.get("session")
+        if session is not None and not session.get("csrf_token"):
+            session["csrf_token"] = generate_csrf_token()
+
+        await self.app(scope, receive, send)
 
 
 class CSRFMiddleware(BaseHTTPMiddleware):

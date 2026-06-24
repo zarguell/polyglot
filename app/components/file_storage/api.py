@@ -32,9 +32,9 @@ def _get_storage_service() -> StorageService:
 
 @router.post("/upload", status_code=201)
 async def upload_file(
+    db: DbDeps,
+    current_user: CurrentUser,
     file: UploadFile = File(...),
-    db: DbDeps = Depends(),
-    current_user: CurrentUser = Depends(),
     service: StorageService = Depends(_get_storage_service),
 ) -> FileUploadResponse:
     """Upload a file. Returns metadata including the file ID."""
@@ -75,8 +75,8 @@ async def upload_file(
 @router.get("/{file_id}/download")
 async def download_file(
     file_id: uuid.UUID,
-    db: DbDeps = Depends(),
-    current_user: CurrentUser = Depends(),
+    db: DbDeps,
+    current_user: CurrentUser,
     service: StorageService = Depends(_get_storage_service),
 ) -> StreamingResponse:
     """Download a file by ID."""
@@ -100,8 +100,8 @@ async def download_file(
 @router.delete("/{file_id}", status_code=204)
 async def delete_file(
     file_id: uuid.UUID,
-    db: DbDeps = Depends(),
-    current_user: CurrentUser = Depends(),
+    db: DbDeps,
+    current_user: CurrentUser,
     service: StorageService = Depends(_get_storage_service),
 ) -> None:
     """Delete a file. Only the owner or an admin may delete."""

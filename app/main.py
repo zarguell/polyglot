@@ -20,6 +20,7 @@ from app.core.middleware import (
     AuditContextMiddleware,
     BodyCacheMiddleware,
     CSRFMiddleware,
+    CSRFTokenSessionMiddleware,
     RequestIdMiddleware,
     SecurityHeadersMiddleware,
     StructuredLoggingMiddleware,
@@ -46,7 +47,12 @@ async def lifespan(app: FastAPI):
 
 
 def _load_components(app: FastAPI) -> None:
-    """Import and register activated components."""
+    """Import and register activated components.
+
+    Failures are collected into ``app.state.component_errors``.  In non-local
+    environments any failure raises ``RuntimeError`` (fail-fast); in local
+    mode errors are recorded but the app continues so /healthz can report them.
+    """
     import importlib
     import pkgutil
 
@@ -62,6 +68,7 @@ def _load_components(app: FastAPI) -> None:
     if settings.installed_components is not None:
         active = [c for c in discovered if c in settings.installed_components]
 
+    errors: list[str] = []
     for name in active:
         try:
             module = importlib.import_module(f"app.components.{name}")
@@ -70,6 +77,16 @@ def _load_components(app: FastAPI) -> None:
                 logger.info("component_registered", name=name)
         except Exception:
             logger.exception("component_load_failed", name=name)
+            errors.append(name)
+
+    app.state.component_errors = errors
+
+    if errors and settings.environment != "local":
+        raise RuntimeError(
+            f"Components failed to load in '{settings.environment}' environment: "
+            f"{', '.join(errors)}. "
+            f"Set ENVIRONMENT=local for lenient startup."
+        )
 
 
 def create_app() -> FastAPI:
@@ -81,6 +98,8 @@ def create_app() -> FastAPI:
         redoc_url="/redoc" if settings.enable_openapi else None,
         lifespan=lifespan,
     )
+
+    app.state.component_errors: list[str] = []
 
     # ── Error handlers ──
     app.add_exception_handler(AppError, app_error_handler)  # type: ignore[type-var]
@@ -99,6 +118,7 @@ def create_app() -> FastAPI:
 
     app.add_middleware(CSRFMiddleware)  # CSRF before Session
     app.add_middleware(AuditContextMiddleware)  # type: ignore[arg-type]  # audit after Session
+    app.add_middleware(CSRFTokenSessionMiddleware)  # seeds csrf_token inside Session scope
     app.add_middleware(  # Session wraps outside CSRF
         SessionMiddleware,  # → request.session available in CSRF
         secret_key=settings.secret_key.get_secret_value(),

@@ -11,7 +11,13 @@ router = APIRouter(tags=["public"])
 
 
 @router.get("/healthz")
-async def healthz():
+async def healthz(request: Request):
+    errors = getattr(request.app.state, "component_errors", [])
+    if errors:
+        return JSONResponse(
+            content={"status": "degraded", "component_errors": errors},
+            status_code=503,
+        )
     return {"status": "ok"}
 
 

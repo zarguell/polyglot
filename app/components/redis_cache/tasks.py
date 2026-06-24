@@ -26,7 +26,8 @@ def clear_cache() -> None:
     asyncio.run(_clear())
 
 
-@task_app.periodic(cron="0 4 * * *")
-def periodic_clear_cache() -> None:
-    """Daily cache flush at 4 AM."""
-    clear_cache.defer()
+# Procrastinate 2.6+: periodic() wraps an already-registered task (has .name attr).
+periodic_clear_cache = task_app.periodic(
+    cron="0 4 * * *",
+    task_name="cache.clear_cache",
+)(clear_cache)

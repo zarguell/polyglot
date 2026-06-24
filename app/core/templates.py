@@ -17,13 +17,28 @@ SRI_HASHES = {
 
 @pass_context
 def csrf_token(ctx) -> str:
+    """Return the CSRF token for the current session.
+
+    Reads directly from ``scope["session"]`` (not ``request.session``) so the
+    write always lands on the same scope object that ``SessionMiddleware``
+    serializes — even when the ``request`` was created inside a
+    ``BaseHTTPMiddleware`` layer whose ``Request`` proxy may diverge.
+
+    Under normal operation the token is already seeded by
+    ``CSRFTokenSessionMiddleware`` before template rendering begins; the
+    fallback write here is a safety net for routes that bypass that
+    middleware.
+    """
     request = ctx.get("request")
     if request is None:
         return ""
-    token = request.session.get("csrf_token")
+    session = request.scope.get("session")
+    if session is None:
+        return ""
+    token = session.get("csrf_token")
     if not token:
         token = generate_csrf_token()
-        request.session["csrf_token"] = token
+        session["csrf_token"] = token
     return token
 
 

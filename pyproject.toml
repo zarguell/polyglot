@@ -20,7 +20,7 @@ dependencies = [
     "procrastinate>=2.6,<3",
     "aiosqlite>=0.20,<1",
     "python-multipart>=0.0,<1",
-    "cryptography>=44,<45",
+    "cryptography>=48.0.1,<49",
 ]
 
 [project.optional-dependencies]

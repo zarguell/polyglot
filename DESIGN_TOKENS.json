@@ -1,0 +1,21 @@
+{
+  "app_name": "Polyglot",
+  "tagline": "AI-native secure application boilerplate",
+  "appearance": {
+    "primary_color": "#2563eb",
+    "primary_hover": "#1d4ed8",
+    "surface": "#ffffff",
+    "surface_secondary": "#f9fafb",
+    "border": "#e5e7eb",
+    "text": "#111827",
+    "text_secondary": "#6b7280",
+    "font_family": "system-ui, -apple-system, sans-serif",
+    "border_radius": "0.5rem",
+    "density": "normal",
+    "dark_mode_supported": true
+  },
+  "frontend": {
+    "starter": "htmx_jinja",
+    "alt_starter": "react_vite"
+  }
+}

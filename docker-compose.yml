@@ -1,0 +1,48 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: polyglot
+      POSTGRES_PASSWORD: polyglot
+      POSTGRES_DB: polyglot
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U polyglot -d polyglot"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  app:
+    build: .
+    ports:
+      - "8000:8000"
+    environment:
+      ENVIRONMENT: local
+      DATABASE_URL: postgresql+asyncpg://polyglot:polyglot@postgres:5432/polyglot
+      SECRET_KEY: dev-secret-key-that-is-at-least-32-char-long
+      ENABLE_OPENAPI: "true"
+      ALLOWED_HOSTS: localhost,127.0.0.1,app
+    depends_on:
+      postgres:
+        condition: service_healthy
+    volumes:
+      - .:/app
+
+  worker:
+    build: .
+    command: procrastinate --app app.core.tasks.task_app worker --wait
+    environment:
+      ENVIRONMENT: local
+      DATABASE_URL: postgresql+asyncpg://polyglot:polyglot@postgres:5432/polyglot
+      SECRET_KEY: dev-secret-key-that-is-at-least-32-char-long
+    depends_on:
+      postgres:
+        condition: service_healthy
+    volumes:
+      - .:/app
+
+volumes:
+  pgdata:

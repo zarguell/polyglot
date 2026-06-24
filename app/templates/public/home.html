@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+{% block title %}{{ app_name }} — Home{% endblock %}
+{% block nav %}{% include "components/nav.html" %}{% endblock %}
+{% block content %}
+<div class="mx-auto max-w-4xl px-4 py-16 sm:py-24 text-center">
+  <h1 class="text-4xl font-bold tracking-tight sm:text-5xl">{{ app_name }}</h1>
+  <p class="mt-4 text-lg text-gray-500 dark:text-gray-400">
+    Secure application shell. Ready for business modules.
+  </p>
+  <div class="mt-8 flex justify-center gap-4">
+    {% if user %}
+    <a href="/app" class="rounded-lg bg-blue-600 px-6 py-3 text-sm font-semibold text-white hover:bg-blue-500">
+      Go to Dashboard
+    </a>
+    {% else %}
+    <a href="/login" class="rounded-lg bg-blue-600 px-6 py-3 text-sm font-semibold text-white hover:bg-blue-500">
+      Sign in
+    </a>
+    {% endif %}
+  </div>
+  <div class="mt-12 grid grid-cols-1 sm:grid-cols-3 gap-6 text-left">
+    <div class="rounded-xl border border-gray-200 dark:border-gray-800 p-6">
+      <h3 class="font-semibold">🔐 Secure by Default</h3>
+      <p class="mt-2 text-sm text-gray-500">OIDC SSO, CSP, CSRF, trusted hosts, secure cookies — all wired.</p>
+    </div>
+    <div class="rounded-xl border border-gray-200 dark:border-gray-800 p-6">
+      <h3 class="font-semibold">🐘 Postgres Native</h3>
+      <p class="mt-2 text-sm text-gray-500">Data, tasks, audit — all in Postgres. No extra infra to run.</p>
+    </div>
+    <div class="rounded-xl border border-gray-200 dark:border-gray-800 p-6">
+      <h3 class="font-semibold">🧩 Component System</h3>
+      <p class="mt-2 text-sm text-gray-500">Copy-on-activate templates for SMTP, Stripe, Webhooks, and more.</p>
+    </div>
+  </div>
+</div>
+{% endblock %}

@@ -22,6 +22,7 @@ class FileRecord(Base):
     content_type: Mapped[str] = mapped_column(String(255), nullable=False)
     size: Mapped[int] = mapped_column(Integer, nullable=False)
     storage_backend: Mapped[str] = mapped_column(String(32), nullable=False)
+    key: Mapped[str | None] = mapped_column(String(64), nullable=True, index=True)
     storage_path: Mapped[str] = mapped_column(Text, nullable=False)
     checksum: Mapped[str] = mapped_column(String(64), nullable=False)
     created_at: Mapped[datetime] = mapped_column(
@@ -29,3 +30,12 @@ class FileRecord(Base):
         server_default=func.now(),
         nullable=False,
     )
+
+    @property
+    def storage_key(self) -> str:
+        """The identifier used to address this file in the storage backend.
+
+        Modern records expose ``key``; legacy rows (``key`` is NULL) fall back
+        to ``storage_path`` so already-stored files remain retrievable.
+        """
+        return self.key or self.storage_path

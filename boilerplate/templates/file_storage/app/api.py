@@ -43,7 +43,7 @@ async def upload_file(
         raise HTTPException(status_code=400, detail="Filename is required")
 
     contents = await file.read()
-    storage_path, checksum = await service.store(
+    key, checksum = await service.store(
         contents=contents,
         filename=file.filename,
         content_type=file.content_type or "application/octet-stream",
@@ -55,7 +55,8 @@ async def upload_file(
         content_type=file.content_type or "application/octet-stream",
         size=len(contents),
         storage_backend=service.backend_name,
-        storage_path=storage_path,
+        key=key,
+        storage_path=key,
         checksum=checksum,
     )
     db.add(record)
@@ -87,7 +88,7 @@ async def download_file(
     if not record:
         raise HTTPException(status_code=404, detail="File not found")
 
-    contents = await service.retrieve(record.storage_path, record.storage_backend)
+    contents = await service.retrieve(record.storage_key, record.storage_backend)
     if contents is None:
         raise HTTPException(status_code=404, detail="File data not found")
 
@@ -115,7 +116,7 @@ async def delete_file(
     if record.user_id != current_user.id and not current_user.is_admin:
         raise HTTPException(status_code=403, detail="Not authorized to delete this file")
 
-    await service.delete(record.storage_path, record.storage_backend)
+    await service.delete(record.storage_key, record.storage_backend)
     await db.delete(record)
     await db.commit()
 

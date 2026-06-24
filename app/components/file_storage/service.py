@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import hashlib
+import uuid
 from pathlib import Path
 
 import structlog
@@ -34,53 +35,61 @@ class StorageService:
         filename: str,
         content_type: str,
     ) -> tuple[str, str]:
-        """Store file contents. Returns (storage_path, checksum)."""
+        """Store file contents. Returns ``(key, checksum)``.
+
+        ``key`` is a URL-safe identifier (UUID hex) used by :meth:`retrieve`.
+        """
         checksum = hashlib.sha256(contents).hexdigest()
+        key = uuid.uuid4().hex
 
         if self.backend_name == "s3":
-            storage_path = await self._store_s3(contents, filename, checksum)
+            await self._store_s3(contents, key, content_type)
         else:
-            storage_path = await self._store_local(contents, filename, checksum)
+            await self._store_local(contents, key, filename)
 
-        return storage_path, checksum
+        return key, checksum
 
-    async def retrieve(self, storage_path: str, backend: str) -> bytes | None:
-        """Retrieve file contents by storage path."""
+    async def retrieve(self, key: str, backend: str) -> bytes | None:
+        """Retrieve file contents by storage key."""
         if backend == "s3":
-            return await self._retrieve_s3(storage_path)
-        return await self._retrieve_local(storage_path)
+            return await self._retrieve_s3(key)
+        return await self._retrieve_local(key)
 
-    async def delete(self, storage_path: str, backend: str) -> None:
-        """Delete a file from storage."""
+    async def delete(self, key: str, backend: str) -> None:
+        """Delete a file from storage by key."""
         if backend == "s3":
-            await self._delete_s3(storage_path)
+            await self._delete_s3(key)
         else:
-            await self._delete_local(storage_path)
+            await self._delete_local(key)
 
     # ── Local filesystem backend ──
 
-    async def _store_local(self, contents: bytes, filename: str, checksum: str) -> str:
+    async def _store_local(self, contents: bytes, key: str, filename: str) -> None:
         self._local_path.mkdir(parents=True, exist_ok=True)
-        file_path = self._local_path / f"{checksum}_{filename}"
+        file_path = self._local_path / key
         file_path.write_bytes(contents)
-        logger.info("file_stored_local", path=str(file_path))
-        return str(file_path)
+        logger.info("file_stored_local", key=key, path=str(file_path), filename=filename)
 
-    async def _retrieve_local(self, storage_path: str) -> bytes | None:
-        path = Path(storage_path)
-        if not path.exists():
+    async def _retrieve_local(self, key: str) -> bytes | None:
+        candidate = self._local_path / key
+        if not candidate.exists():
+            # Backward compat: legacy records stored the full filesystem path.
+            candidate = Path(key)
+        if not candidate.exists():
             return None
-        return path.read_bytes()
+        return candidate.read_bytes()
 
-    async def _delete_local(self, storage_path: str) -> None:
-        path = Path(storage_path)
-        if path.exists():
-            path.unlink()
-            logger.info("file_deleted_local", path=str(path))
+    async def _delete_local(self, key: str) -> None:
+        candidate = self._local_path / key
+        if not candidate.exists():
+            candidate = Path(key)
+        if candidate.exists():
+            candidate.unlink()
+            logger.info("file_deleted_local", key=key, path=str(candidate))
 
     # ── S3 backend (behind env var gate) ──
 
-    async def _store_s3(self, contents: bytes, filename: str, checksum: str) -> str:
+    async def _store_s3(self, contents: bytes, key: str, content_type: str) -> None:
         from app.core.config import settings
 
         bucket = self._s3_bucket or settings.aws_bucket
@@ -90,16 +99,15 @@ class StorageService:
         import boto3
 
         s3 = boto3.client("s3", region_name=self._s3_region)
-        key = f"{checksum}/{filename}"
         s3.put_object(
             Bucket=bucket,
             Key=key,
             Body=contents,
+            ContentType=content_type,
         )
         logger.info("file_stored_s3", bucket=bucket, key=key)
-        return key
 
-    async def _retrieve_s3(self, storage_path: str) -> bytes | None:
+    async def _retrieve_s3(self, key: str) -> bytes | None:
         from app.core.config import settings
 
         bucket = self._s3_bucket or settings.aws_bucket
@@ -110,13 +118,13 @@ class StorageService:
 
         s3 = boto3.client("s3", region_name=self._s3_region)
         try:
-            obj = s3.get_object(Bucket=bucket, Key=storage_path)
+            obj = s3.get_object(Bucket=bucket, Key=key)
             return obj["Body"].read()
         except Exception:
-            logger.exception("s3_retrieve_failed", key=storage_path)
+            logger.exception("s3_retrieve_failed", key=key)
             return None
 
-    async def _delete_s3(self, storage_path: str) -> None:
+    async def _delete_s3(self, key: str) -> None:
         from app.core.config import settings
 
         bucket = self._s3_bucket or settings.aws_bucket
@@ -126,5 +134,5 @@ class StorageService:
         import boto3
 
         s3 = boto3.client("s3", region_name=self._s3_region)
-        s3.delete_object(Bucket=bucket, Key=storage_path)
-        logger.info("file_deleted_s3", bucket=bucket, key=storage_path)
+        s3.delete_object(Bucket=bucket, Key=key)
+        logger.info("file_deleted_s3", bucket=bucket, key=key)

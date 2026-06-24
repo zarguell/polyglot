@@ -19,15 +19,16 @@ def test_storage_service_local_store_and_retrieve(tmp_path):
     service = StorageService(backend="local", local_path=str(tmp_path / "storage"))
 
     async def _run():
-        storage_path, checksum = await service.store(
+        key, checksum = await service.store(
             contents=b"hello world",
             filename="test.txt",
             content_type="text/plain",
         )
-        data = await service.retrieve(storage_path, "local")
+        assert len(key) == 32  # uuid4 hex is URL-safe and 32 chars
+        data = await service.retrieve(key, "local")
         assert data == b"hello world"
-        await service.delete(storage_path, "local")
-        data_after = await service.retrieve(storage_path, "local")
+        await service.delete(key, "local")
+        data_after = await service.retrieve(key, "local")
         assert data_after is None
 
     asyncio.run(_run())

@@ -6,10 +6,10 @@ from datetime import datetime
 from sqlalchemy import Boolean, DateTime, String, Text, UniqueConstraint
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
-from app.models.base import Base, uuid_pk
+from app.models.base import AuditMixin, Base, uuid_pk
 
 
-class User(Base):
+class User(AuditMixin, Base):
     __tablename__ = "users"
 
     id: Mapped[uuid.UUID] = uuid_pk()
@@ -29,17 +29,6 @@ class User(Base):
     auth_provider: Mapped[str] = mapped_column(String(32), nullable=False)
     is_active: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
     is_admin: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
-    created_at: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True),
-        server_default=__import__("sqlalchemy").func.now(),
-        nullable=False,
-    )
-    updated_at: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True),
-        server_default=__import__("sqlalchemy").func.now(),
-        onupdate=__import__("sqlalchemy").func.now(),
-        nullable=False,
-    )
     last_login_at: Mapped[datetime | None] = mapped_column(
         DateTime(timezone=True),
         nullable=True,
@@ -47,4 +36,16 @@ class User(Base):
 
     __table_args__ = (UniqueConstraint("email", name="uq_users_email"),)
 
-    sessions = relationship("AuthSession", back_populates="user", lazy="noload")
+    sessions = relationship(
+        "AuthSession",
+        back_populates="user",
+        lazy="noload",
+        foreign_keys="AuthSession.user_id",
+    )
+
+    roles = relationship(
+        "Role",
+        secondary="user_roles",
+        lazy="selectin",
+        back_populates="users",
+    )

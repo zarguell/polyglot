@@ -1,0 +1,11 @@
+# MailHog is already defined in docker-compose.override.yml under the `mailhog` profile.
+# Start it with: docker compose --profile mailhog up -d
+#
+# No additional compose services are needed for the smtp template.
+# Uncomment below if you want a local SMTP server here instead of profiles.
+
+# mailhog:
+#   image: mailhog/mailhog
+#   ports:
+#     - "1025:1025"
+#     - "8025:8025"

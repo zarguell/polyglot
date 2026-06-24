@@ -1,0 +1,2 @@
+# No additional Docker services required for Inbound Webhooks.
+# The app receives webhooks over the existing HTTP port (8000).

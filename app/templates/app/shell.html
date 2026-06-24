@@ -19,6 +19,10 @@
       <div><dt class="text-gray-500">Email</dt><dd class="font-medium">{{ user.email }}</dd></div>
       <div><dt class="text-gray-500">Provider</dt><dd class="font-medium">{{ user.auth_provider }}</dd></div>
       <div><dt class="text-gray-500">Role</dt><dd class="font-medium">{% if user.is_admin %}Admin{% else %}User{% endif %}</dd></div>
+      {% if roles is defined %}
+      <div><dt class="text-gray-500">RBAC Roles</dt><dd class="font-medium">{{ roles|map(attribute='name')|join(', ') or 'None' }}</dd></div>
+      <div><dt class="text-gray-500">Permissions</dt><dd class="font-medium">{{ permission_count or 0 }} granted</dd></div>
+      {% endif %}
     </dl>
   </div>
 

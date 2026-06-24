@@ -46,6 +46,13 @@ indent-width = 4
 [tool.ruff.lint]
 select = ["E", "W", "F", "I", "N", "UP", "B", "SIM", "ARG", "PYI"]
 
+[tool.ruff.lint.per-file-ignores]
+"tests/*" = ["ARG001", "ARG002", "B008"]
+"app/api/*" = ["ARG001", "B008"]
+"app/core/middleware/*" = ["B008"]
+"app/components/**" = ["ARG001", "ARG002", "B008", "E501", "UP017"]
+"boilerplate/**" = ["ARG001", "ARG002", "B008", "E501", "UP017", "B904", "SIM110"]
+
 [tool.ruff.format]
 quote-style = "double"
 

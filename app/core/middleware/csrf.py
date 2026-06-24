@@ -8,7 +8,7 @@ from starlette.requests import Request
 from starlette.responses import Response
 
 SAFE_METHODS = frozenset({"GET", "HEAD", "OPTIONS", "TRACE"})
-CSRF_EXEMPT_PATHS = frozenset({"/auth/callback", "/webhooks"})
+CSRF_EXEMPT_PATHS = frozenset({"/auth/callback", "/auth/saml/acs", "/webhooks"})
 
 
 def generate_csrf_token() -> str:

@@ -1,0 +1,9 @@
+{% extends "base_email.html" %}
+{% block content %}
+  <p>Hi {{ name | default("there") }},</p>
+  <p>Welcome to Polyglot! Your account has been created successfully.</p>
+  <p>You can log in at <a href="{{ login_url | default('#') }}">{{ login_url | default('#') }}</a>.</p>
+  {% if extra_message %}
+    <p>{{ extra_message }}</p>
+  {% endif %}
+{% endblock %}

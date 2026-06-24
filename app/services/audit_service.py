@@ -38,6 +38,90 @@ async def log_event(
     return entry
 
 
+async def log_create(
+    db: AsyncSession,
+    *,
+    actor_user_id: uuid.UUID | None,
+    instance: object,
+    metadata: dict | None = None,
+    ip_address: str | None = None,
+    request_id: str | None = None,
+) -> AuditLog:
+    """Log a ``create`` audit event, auto-populating target info from the
+    SQLAlchemy model instance."""
+    target_type = instance.__class__.__name__
+    target_id = _extract_pk(instance)
+    return await log_event(
+        db,
+        actor_user_id=actor_user_id,
+        action="create",
+        target_type=target_type,
+        target_id=target_id,
+        metadata=metadata,
+        ip_address=ip_address,
+        request_id=request_id,
+    )
+
+
+async def log_update(
+    db: AsyncSession,
+    *,
+    actor_user_id: uuid.UUID | None,
+    instance: object,
+    metadata: dict | None = None,
+    ip_address: str | None = None,
+    request_id: str | None = None,
+) -> AuditLog:
+    """Log an ``update`` audit event, auto-populating target info from the
+    SQLAlchemy model instance."""
+    target_type = instance.__class__.__name__
+    target_id = _extract_pk(instance)
+    return await log_event(
+        db,
+        actor_user_id=actor_user_id,
+        action="update",
+        target_type=target_type,
+        target_id=target_id,
+        metadata=metadata,
+        ip_address=ip_address,
+        request_id=request_id,
+    )
+
+
+async def log_delete(
+    db: AsyncSession,
+    *,
+    actor_user_id: uuid.UUID | None,
+    instance: object,
+    metadata: dict | None = None,
+    ip_address: str | None = None,
+    request_id: str | None = None,
+) -> AuditLog:
+    """Log a ``delete`` audit event, auto-populating target info from the
+    SQLAlchemy model instance."""
+    target_type = instance.__class__.__name__
+    target_id = _extract_pk(instance)
+    return await log_event(
+        db,
+        actor_user_id=actor_user_id,
+        action="delete",
+        target_type=target_type,
+        target_id=target_id,
+        metadata=metadata,
+        ip_address=ip_address,
+        request_id=request_id,
+    )
+
+
+def _extract_pk(instance: object) -> str | None:
+    """Best-effort extraction of the primary key value from a model instance."""
+    for attr in ("id", "key", "name"):
+        val = getattr(instance, attr, None)
+        if val is not None:
+            return str(val)
+    return None
+
+
 async def get_recent_logs(
     db: AsyncSession,
     *,

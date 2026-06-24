@@ -9,6 +9,7 @@ from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.middleware.sessions import SessionMiddleware
 from starlette.requests import Request
 
+from app.api.admin import router as admin_router
 from app.api.auth import router as auth_router
 from app.api.public import router as public_router
 from app.api.system import router as system_router
@@ -16,6 +17,7 @@ from app.core.config import settings
 from app.core.errors import AppError, app_error_handler, generic_exception_handler
 from app.core.logging import setup_logging
 from app.core.middleware import (
+    AuditContextMiddleware,
     CSRFMiddleware,
     RequestIdMiddleware,
     SecurityHeadersMiddleware,
@@ -93,6 +95,7 @@ def create_app() -> FastAPI:
     app.add_middleware(NonceMiddleware)  # type: ignore[arg-type]
 
     app.add_middleware(CSRFMiddleware)  # CSRF before Session
+    app.add_middleware(AuditContextMiddleware)  # type: ignore[arg-type]  # audit after Session
     app.add_middleware(  # Session wraps outside CSRF
         SessionMiddleware,  # → request.session available in CSRF
         secret_key=settings.secret_key.get_secret_value(),
@@ -114,6 +117,7 @@ def create_app() -> FastAPI:
     app.include_router(public_router, prefix="")
     app.include_router(auth_router, prefix="")
     app.include_router(system_router, prefix="")
+    app.include_router(admin_router, prefix="")
 
     return app
 

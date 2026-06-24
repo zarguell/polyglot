@@ -1,0 +1,2 @@
+# No additional Docker services required for LDAP/AD.
+# The LDAP/AD directory server is external infrastructure.

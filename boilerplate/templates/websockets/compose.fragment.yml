@@ -1,0 +1,3 @@
+# No additional Docker services needed for WebSockets.
+# FastAPI serves WebSocket connections over the existing HTTP port (8000).
+# If a reverse proxy is used, ensure WebSocket Upgrade headers are forwarded.

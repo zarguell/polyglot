@@ -1,15 +1,14 @@
 from __future__ import annotations
 
 import uuid
-from datetime import datetime
 
-from sqlalchemy import JSON, DateTime, ForeignKey, String, Uuid, func
+from sqlalchemy import JSON, ForeignKey, String, Uuid
 from sqlalchemy.orm import Mapped, mapped_column
 
-from app.models.base import Base, uuid_pk
+from app.models.base import AuditMixin, Base, uuid_pk
 
 
-class AuditLog(Base):
+class AuditLog(AuditMixin, Base):
     __tablename__ = "audit_logs"
 
     id: Mapped[uuid.UUID] = uuid_pk()
@@ -30,8 +29,3 @@ class AuditLog(Base):
     )
     ip_address: Mapped[str | None] = mapped_column(String(45), nullable=True)
     request_id: Mapped[str | None] = mapped_column(String(64), nullable=True)
-    created_at: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True),
-        server_default=func.now(),
-        nullable=False,
-    )

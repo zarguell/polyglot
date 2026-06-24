@@ -6,10 +6,10 @@ from datetime import datetime
 from sqlalchemy import Boolean, DateTime, ForeignKey, String, Text, Uuid
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
-from app.models.base import Base, uuid_pk
+from app.models.base import AuditMixin, Base, uuid_pk
 
 
-class AuthSession(Base):
+class AuthSession(AuditMixin, Base):
     __tablename__ = "auth_sessions"
 
     id: Mapped[uuid.UUID] = uuid_pk()
@@ -26,11 +26,6 @@ class AuthSession(Base):
     )
     expires_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
-        nullable=False,
-    )
-    created_at: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True),
-        server_default=__import__("sqlalchemy").func.now(),
         nullable=False,
     )
     revoked_at: Mapped[datetime | None] = mapped_column(
@@ -51,4 +46,4 @@ class AuthSession(Base):
         nullable=False,
     )
 
-    user = relationship("User", back_populates="sessions")
+    user = relationship("User", back_populates="sessions", foreign_keys=[user_id])

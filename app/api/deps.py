@@ -5,10 +5,12 @@ from typing import Annotated
 from fastapi import Depends, Request
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.context import set_current_actor
 from app.core.db import async_session_factory
-from app.core.errors import UnauthorizedError
+from app.core.errors import ForbiddenError, UnauthorizedError
 from app.core.security import hash_token
 from app.models.user import User
+from app.services.rbac_service import has_permission
 from app.services.user_service import get_user_by_session
 
 
@@ -41,6 +43,7 @@ async def get_current_user(
     if not user.is_active:
         raise UnauthorizedError("Account deactivated")
 
+    set_current_actor(str(user.id))
     return user
 
 
@@ -55,3 +58,25 @@ async def require_admin(current_user: CurrentUser) -> User:
 
 
 AdminUser = Annotated[User, Depends(require_admin)]
+
+
+def require_permission(resource: str, action: str):
+    """Factory: return a Depends callable that checks permission on the current user.
+
+    Usage:
+        AdminDeleteUser = Annotated[User, Depends(require_permission("users", "delete"))]
+    """
+
+    async def _check(
+        current_user: User = Depends(get_current_user),
+        db: AsyncSession = Depends(get_db),
+    ) -> User:
+        if current_user.is_admin:
+            return current_user
+
+        if not await has_permission(db, user=current_user, resource=resource, action=action):
+            raise ForbiddenError(f"Missing permission: {resource}:{action}")
+
+        return current_user
+
+    return _check

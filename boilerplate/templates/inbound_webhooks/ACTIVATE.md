@@ -47,13 +47,12 @@ pytest tests/unit/test_inbound_webhooks.py -v
 After activation, register handlers to process webhook events:
 
 ```python
-from app.components.inbound_webhooks.service import WebhookRegistry
+from app.components.inbound_webhooks.service import get_webhook_registry
 
 def handle_stripe_event(event_type: str, payload: dict) -> None:
     print(f"Received {event_type}: {payload}")
 
-registry = WebhookRegistry(default_secret="my_secret")
-registry.register("stripe", handle_stripe_event)
+get_webhook_registry().register("stripe", handle_stripe_event)
 ```
 
 Send a test webhook:

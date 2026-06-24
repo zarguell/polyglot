@@ -9,7 +9,9 @@ from datetime import UTC, datetime
 from app.core.db import async_session_factory
 from app.models.audit_log import AuditLog
 from app.models.installed_component import InstalledComponent
+from app.models.role import Permission, Role
 from app.models.user import User
+from app.models.user_role import UserRole
 
 
 async def seed() -> None:
@@ -22,6 +24,40 @@ async def seed() -> None:
             print("Database already seeded, skipping.")
             return
 
+        # Create default RBAC permissions
+        default_permissions = [
+            ("admin", "access", "Full administrative access"),
+            ("users", "manage", "Create, update, delete users"),
+            ("users", "view", "View user details"),
+            ("roles", "manage", "Create, update, delete roles"),
+            ("audit", "view", "View audit logs"),
+            ("settings", "edit", "Modify application settings"),
+        ]
+        perm_map: dict[str, Permission] = {}
+        for resource, action, description in default_permissions:
+            perm = Permission(resource=resource, action=action, description=description)
+            db.add(perm)
+            perm_map[f"{resource}:{action}"] = perm
+        await db.flush()
+
+        # Create default roles
+        admin_role = Role(
+            name="admin",
+            description="Full system administrator",
+            is_system=True,
+        )
+        admin_role.permissions = list(perm_map.values())
+
+        user_role = Role(
+            name="user",
+            description="Standard authenticated user",
+            is_system=True,
+        )
+        user_role.permissions = [perm_map["users:view"]]
+
+        db.add_all([admin_role, user_role])
+        await db.flush()
+
         # Create dev admin user
         user = User(
             external_subject_id="seed:admin",
@@ -33,6 +69,10 @@ async def seed() -> None:
             last_login_at=datetime.now(UTC),
         )
         db.add(user)
+        await db.flush()
+
+        # Assign admin role to the seed admin user
+        db.add(UserRole(user_id=user.id, role_id=admin_role.id))
         await db.flush()
 
         # Audit log entries

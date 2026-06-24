@@ -1,0 +1,2 @@
+# No additional Docker services required for Outbound Webhooks.
+# Outbound dispatch runs as background tasks in the worker container.

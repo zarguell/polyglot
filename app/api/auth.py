@@ -8,9 +8,13 @@ from app.api.deps import CurrentUser, DbDeps
 from app.core.auth import extract_claims, get_oidc_client
 from app.core.config import settings
 from app.core.db import async_session_factory
+from app.core.saml import build_saml_client
 from app.core.security import hash_token
 from app.core.templates import get_jinja_env
 from app.services.audit_service import log_event
+from app.services.auth_service import (
+    handle_saml_acs,
+)
 from app.services.user_service import (
     create_session,
     revoke_session,
@@ -203,3 +207,94 @@ async def logout(request: Request, user: CurrentUser, db: DbDeps):
     response = RedirectResponse(url="/", status_code=302)
     response.delete_cookie("session_token", path="/")
     return response
+
+
+# ── SAML ──
+
+
+@router.get("/login/saml")
+async def saml_login(request: Request):
+    """Redirect to SAML IdP for authentication."""
+    if not settings.auth_saml_enabled:
+        return HTMLResponse("SAML not enabled", status_code=404)
+
+    acs_url = str(request.url_for("saml_acs"))
+    client = build_saml_client(acs_url=acs_url)
+    if not client:
+        return HTMLResponse("SAML not configured", status_code=503)
+
+    redirect_url = client.create_login_url()
+    return RedirectResponse(redirect_url)
+
+
+@router.post("/auth/saml/acs")
+async def saml_acs(request: Request):
+    """SAML Assertion Consumer Service — process IdP response."""
+    if not settings.auth_saml_enabled:
+        return HTMLResponse("SAML not enabled", status_code=404)
+
+    try:
+        claims = await handle_saml_acs(request)
+    except ValueError as e:
+        logger.error("saml_acs_failed", error=str(e))
+        return HTMLResponse("Authentication failed", status_code=400)
+
+    async with async_session_factory() as db:
+        try:
+            user = await upsert_user(
+                db,
+                external_subject_id=claims["sub"],
+                email=claims["email"],
+                display_name=claims["name"],
+                auth_provider="saml",
+            )
+            session_token, session_obj = await create_session(
+                db,
+                user,
+                ip_address=request.client.host if request.client else None,
+                user_agent=request.headers.get("user-agent"),
+                max_age_seconds=settings.session_max_age_seconds,
+            )
+
+            await log_event(
+                db,
+                actor_user_id=user.id,
+                action="login",
+                target_type="user",
+                target_id=str(user.id),
+                metadata={"provider": "saml"},
+                ip_address=request.client.host if request.client else None,
+                request_id=request.headers.get("X-Request-ID"),
+            )
+            await db.commit()
+        except Exception:
+            await db.rollback()
+            logger.exception("saml_acs_upsert_failed")
+            return HTMLResponse("Authentication error", status_code=500)
+
+    request.session["session_token"] = session_token
+    response = RedirectResponse(url="/app", status_code=302)
+    response.set_cookie(
+        key="session_token",
+        value=session_token,
+        httponly=True,
+        max_age=settings.session_max_age_seconds,
+        samesite="lax",
+        secure=settings.environment != "local",
+    )
+    return response
+
+
+@router.get("/auth/saml/metadata")
+async def saml_metadata(request: Request):
+    """Serve SP metadata XML for IdP registration."""
+    if not settings.auth_saml_enabled:
+        return HTMLResponse("SAML not enabled", status_code=404)
+
+    acs_url = str(request.url_for("saml_acs"))
+    client = build_saml_client(acs_url=acs_url)
+    if not client:
+        return HTMLResponse("SAML not configured", status_code=503)
+
+    sp_metadata_xml = client.create_sp_metadata()
+    return HTMLResponse(sp_metadata_xml, media_type="application/xml")

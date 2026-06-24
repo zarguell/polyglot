@@ -47,6 +47,9 @@ Polyglot is an opinionated secure application boilerplate. It provides authentic
 9. **Procrastinate tasks must not be used for request-local operations.**
 10. **Audit log every auth-relevant event (login, logout, role change, settings change).**
 11. **Webhook endpoints must use HMAC signature verification, not CSRF.**
+12. **If implementing multi-tenancy, prefer service-layer tenant scoping first. RLS is defense-in-depth, not a replacement for application checks.**
+13. **RLS policies must be included in Alembic migrations as ``op.execute()`` statements.**
+14. **RLS requires the ``postgres`` user to enable, and each policy needs its own migration.**
 
 ## Data Modeling Rules
 

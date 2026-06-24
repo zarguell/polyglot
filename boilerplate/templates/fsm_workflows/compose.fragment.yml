@@ -1,0 +1,2 @@
+# No additional Docker services required for FSM Workflows.
+# State machines run in-process using the transitions library.

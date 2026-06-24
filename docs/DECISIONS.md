@@ -55,3 +55,74 @@
 **Decision:** Starlette SessionMiddleware for transport (signed cookie), `auth_sessions` table for server-side tracking.
 
 **Rationale:** Cookie-only sessions can't be individually revoked. Server-side sessions allow forced logout, suspension, and audit.
+
+## ADR-008: Postgres Row-Level Security
+
+**Context:** Multi-tenant applications need hard tenant isolation to prevent cross-tenant data leakage at every layer. Application-level checks are necessary but can be bypassed by bugs or misconfigurations.
+
+**Decision:** Use Postgres Row-Level Security (RLS) as a defense-in-depth layer for multi-tenant tables. Application-layer checks (service-layer tenant scoping) remain the primary enforcement mechanism.
+
+**When to use RLS:**
+- Multi-tenant apps with hard tenant boundaries (e.g., separate organizations with zero data sharing)
+- Tables where a single accidental query omission would expose another tenant's data
+- Compliance-heavy domains (HIPAA, SOC 2) where database-level guarantees reduce audit scope
+
+**When NOT to use RLS:**
+- Single-tenant applications
+- Soft multi-tenancy (e.g., projects within a single org)
+- Tables where tenant isolation is already guaranteed by the data model (e.g., user-scoped data keyed by user_id)
+
+**Implementation pattern:**
+
+```sql
+-- Enable RLS on a table
+ALTER TABLE my_table ENABLE ROW LEVEL SECURITY;
+
+-- Create a tenant isolation policy
+CREATE POLICY tenant_isolation ON my_table
+    USING (tenant_id = current_setting('app.tenant_id')::uuid);
+
+-- Set the session variable per request
+SET app.tenant_id = '550e8400-e29b-41d4-a716-446655440000';
+```
+
+In the application layer, set the tenant via a SQLAlchemy connection event:
+
+```python
+from sqlalchemy import event
+from app.core.context import get_current_actor
+
+@event.listens_for(engine.sync_engine, "connect")
+def set_tenant(dbapi_connection, connection_record):
+    # Only for Postgres; SQLite (tests) ignores this
+    try:
+        cursor = dbapi_connection.cursor()
+        cursor.execute("SELECT set_config('app.tenant_id', %s, false)", (tenant_id,))
+    except Exception:
+        pass  # Skip for SQLite / non-Postgres environments
+```
+
+**Limitations:**
+- **Not testable with SQLite**: RLS is Postgres-only. Integration tests must be marked `@pytest.mark.integration`.
+- **Migrations must be explicit**: Each policy needs its own Alembic migration as `op.execute()` statements.
+- **Performance**: RLS policies add a WHERE clause to every query on that table. Keep policies simple and index the filtering column.
+- **Requires the `postgres` superuser or `ALTER TABLE` grant to enable RLS and create policies.
+- **pg_dump/restore**: Policies are included in schema dumps but require the same Postgres version for restore.
+
+**RLS policy migration example:**
+
+```python
+# alembic/versions/xxxx_add_rls_policies.py
+def upgrade():
+    op.execute("ALTER TABLE users ENABLE ROW LEVEL SECURITY")
+    op.execute("""
+        CREATE POLICY tenant_isolation ON users
+        USING (tenant_id = current_setting('app.tenant_id')::uuid)
+    """)
+
+def downgrade():
+    op.execute("DROP POLICY IF EXISTS tenant_isolation ON users")
+    op.execute("ALTER TABLE users DISABLE ROW LEVEL SECURITY")
+```
+
+**Recommendation:** Use application-level checks (service-layer tenant scoping) before RLS. RLS is defense-in-depth — it should never be the only isolation mechanism, and it should not be deployed until the application-level checks are in place and tested.

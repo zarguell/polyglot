@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from typing import Literal
 
-from pydantic import AnyHttpUrl, Field, PostgresDsn, SecretStr
+from pydantic import AnyHttpUrl, Field, PostgresDsn, SecretStr, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -34,14 +34,33 @@ class Settings(BaseSettings):
     auth_oidc_discovery_url: AnyHttpUrl | None = None
     auth_oidc_tenant: str | None = None
     auth_oidc_domain: str | None = None
+    # Auth — SAML
+    auth_saml_enabled: bool = False
+    auth_saml_idp_metadata_url: str | None = None
+    auth_saml_sp_entity_id: str = "polyglot"
+    auth_saml_sp_private_key: SecretStr | None = None
+    auth_saml_sp_cert: SecretStr | None = None
+
     session_max_age_seconds: int = 43200  # 12 hours
 
     # Security
     allowed_hosts: list[str] = ["localhost", "127.0.0.1"]
     cors_allowed_origins: list[str] = []
 
-    # Components
+    # Components (comma-separated in .env, e.g. "webhooks,smtp,totp_mfa")
     installed_components: list[str] | None = None
+
+    @field_validator("installed_components", mode="before")
+    @classmethod
+    def _parse_installed_components(cls, v: str | list[str] | None) -> list[str] | None:
+        if v is None:
+            return None
+        if isinstance(v, list):
+            return [s.strip() for s in v if s.strip()]
+        if isinstance(v, str):
+            items = [s.strip() for s in v.split(",") if s.strip()]
+            return items if items else None
+        return None
 
     # Tasks
     procrastinate_schema: str = "procrastinate"

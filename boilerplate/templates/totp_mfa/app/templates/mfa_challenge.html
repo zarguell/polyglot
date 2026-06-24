@@ -1,0 +1,58 @@
+{% extends "base.html" %}
+{% block title %}{{ app_name }} — MFA Verification{% endblock %}
+{% block nav %}{% include "components/nav.html" %}{% endblock %}
+{% block content %}
+<div class="mx-auto max-w-sm px-4 py-16 sm:px-6 lg:px-8">
+  <div class="rounded-xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 p-8">
+
+    <div class="text-center mb-6">
+      <h1 class="text-xl font-bold">Two-Factor Authentication</h1>
+      <p class="text-sm text-gray-500 dark:text-gray-400 mt-2">
+        Enter your verification code to continue.
+      </p>
+    </div>
+
+    {% if error %}
+    <div class="rounded-lg border border-red-200 dark:border-red-900 bg-red-50 dark:bg-red-950 p-3 mb-6 text-sm text-red-700 dark:text-red-300">
+      {{ error }}
+    </div>
+    {% endif %}
+
+    <form action="/mfa/challenge" method="post" class="space-y-4">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <div>
+        <label for="code" class="block text-sm font-medium mb-1">
+          Verification Code
+        </label>
+        <input
+          type="text"
+          name="code"
+          id="code"
+          required
+          autofocus
+          placeholder="000000 or backup code"
+          inputmode="numeric"
+          autocomplete="one-time-code"
+          class="w-full rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900 px-3 py-2 text-sm text-center tracking-widest font-mono text-lg"
+        >
+        <p class="mt-1 text-xs text-gray-400">
+          Enter your 6-digit authenticator code or a backup code
+        </p>
+      </div>
+      <button
+        type="submit"
+        class="w-full rounded-lg bg-blue-600 px-4 py-2.5 text-sm font-medium text-white hover:bg-blue-500 transition-colors"
+      >
+        Verify
+      </button>
+    </form>
+
+    <div class="mt-6 pt-6 border-t border-gray-200 dark:border-gray-800">
+      <p class="text-xs text-gray-400 text-center">
+        <a href="/logout" class="text-blue-600 dark:text-blue-400 hover:underline">Sign out</a>
+        and try a different account.
+      </p>
+    </div>
+  </div>
+</div>
+{% endblock %}

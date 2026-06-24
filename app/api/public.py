@@ -3,6 +3,7 @@ from __future__ import annotations
 from fastapi import APIRouter, Request
 from fastapi.responses import HTMLResponse, JSONResponse
 
+from app.core.config import settings
 from app.core.db import check_db_connection
 from app.core.templates import get_jinja_env
 
@@ -33,5 +34,6 @@ async def home(request: Request):
         template.render(
             request=request,
             user=getattr(request.state, "user", None),
+            saml_enabled=settings.auth_saml_enabled,
         ),
     )

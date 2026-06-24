@@ -1,0 +1,5 @@
+# No additional Docker services required for Stripe.
+# Payments are processed by Stripe's infrastructure.
+#
+# For local webhook testing, use the Stripe CLI:
+#   stripe listen --forward-to localhost:8000/api/stripe/webhook

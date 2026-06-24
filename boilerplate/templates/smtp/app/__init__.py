@@ -1,0 +1,18 @@
+"""SMTP component — email sending with template rendering and retry tasks."""
+
+from __future__ import annotations
+
+import structlog
+
+logger = structlog.get_logger()
+
+
+def register(app, settings):  # noqa: ARG001 (contract: settings passed by main.py)
+    """Register SMTP routes and tasks with the FastAPI application."""
+    from app.components.smtp.api import router
+
+    app.include_router(router, prefix="")
+
+    from app.components.smtp import tasks  # noqa: F401 — registers tasks
+
+    logger.info("smtp_component_activated")

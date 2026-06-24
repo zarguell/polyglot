@@ -1,0 +1,2 @@
+# No additional services required — TOTP is application-level only.
+# The MFADevice table lives in the existing Postgres database.

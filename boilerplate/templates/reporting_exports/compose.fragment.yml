@@ -1,0 +1,2 @@
+# No additional Docker services required for Reporting & Exports.
+# Export files are generated in-process and served from the app container.

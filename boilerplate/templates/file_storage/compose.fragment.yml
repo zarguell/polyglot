@@ -1,0 +1,2 @@
+# No additional Docker services required for file_storage.
+# Files are stored on the local filesystem (STORAGE_BACKEND=local) or S3.

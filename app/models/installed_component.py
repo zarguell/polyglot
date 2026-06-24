@@ -5,10 +5,10 @@ from datetime import datetime
 from sqlalchemy import JSON, DateTime, Text, func
 from sqlalchemy.orm import Mapped, mapped_column
 
-from app.models.base import Base
+from app.models.base import AuditMixin, Base
 
 
-class InstalledComponent(Base):
+class InstalledComponent(AuditMixin, Base):
     __tablename__ = "installed_components"
 
     name: Mapped[str] = mapped_column(Text, primary_key=True)

@@ -1,0 +1,26 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{{ title | default("Polyglot") }}</title>
+  <style>
+    body { font-family: system-ui, -apple-system, sans-serif; background: #f4f4f5; margin: 0; padding: 0; }
+    .container { max-width: 600px; margin: 40px auto; background: #fff; border-radius: 8px; padding: 32px; }
+    .header { border-bottom: 2px solid #e4e4e7; padding-bottom: 16px; margin-bottom: 24px; }
+    .header h1 { margin: 0; font-size: 20px; color: #18181b; }
+    .footer { margin-top: 32px; padding-top: 16px; border-top: 1px solid #e4e4e7; font-size: 13px; color: #a1a1aa; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <h1>{{ title | default("Polyglot") }}</h1>
+    </div>
+    {% block content %}{% endblock %}
+    <div class="footer">
+      <p>This email was sent by Polyglot. If you did not expect this, please ignore it.</p>
+    </div>
+  </div>
+</body>
+</html>

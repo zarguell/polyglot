@@ -21,7 +21,11 @@ async def trigger_ldap_sync(current_user: CurrentUser) -> dict:
     if not service.is_configured():
         raise HTTPException(status_code=503, detail="LDAP not configured")
 
-    sync_ldap_users.defer()
+    try:
+        sync_ldap_users.defer()
+    except Exception:
+        logger.warning("sync_ldap_users_defer_failed")
+
     logger.info("ldap_sync_triggered", user_id=str(current_user.id))
     return {"status": "ok", "message": "LDAP sync triggered"}
 

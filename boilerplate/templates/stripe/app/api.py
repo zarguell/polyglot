@@ -69,7 +69,10 @@ async def stripe_webhook(
 
     from app.components.stripe.tasks import handle_stripe_event
 
-    handle_stripe_event.defer(event_type=event["type"], event_data=event)
+    try:
+        handle_stripe_event.defer(event_type=event["type"], event_data=event)
+    except Exception:
+        logger.warning("handle_stripe_event_defer_failed", event_type=event["type"])
 
     logger.info("stripe_webhook_received", event_type=event["type"])
     return {"status": "received", "event_type": event["type"]}

@@ -119,7 +119,7 @@ Polyglot is an opinionated secure application boilerplate. It provides authentic
 
 1. Reading the PRD (`docs/PRD.md`)
 2. Reading this file for conventions
-3. Reading `docs/DESIGN.md` for UI tokens
+3. Reading `docs/DESIGN.md` for UI tokens (sourced from `DESIGN_TOKENS.json` via `make generate-tokens`)
 4. Creating domain models in `app/models/`
 5. Creating API routes in `app/api/`
 6. Creating UI templates in `app/templates/`
@@ -188,6 +188,27 @@ Polyglot is an opinionated secure application boilerplate. It provides authentic
 4. Don't use tasks for synchronous responses.
 5. Webhook ingestion: enqueue + return 202.
 6. **Periodic triggers**: use the wrapper pattern (see Quick Reference). Do NOT use `@task_app.periodic()` as a decorator on a plain function — Procrastinate 2.6+ requires the target to be a registered task.
+
+7. **Testing caveat — `AppNotOpen`**: In tests, `task_app` is never opened (no
+   connection pool is initialized). Every `.defer()` call will raise
+   `procrastinate.exceptions.AppNotOpen`. Always wrap `.defer()` calls in
+   try/except when the environment may not have initialized the Procrastinate
+   connection pool. All route-handler `.defer()` calls in this codebase use the
+   pattern:
+   ```python
+   try:
+       some_task.defer(...)
+   except Exception:
+       logger.warning("some_task_defer_failed")
+   ```
+   See `app/services/ticket_notifications.py` for a reference implementation.
+
+8. **Worker component initialization**: Component ``register()`` hooks run in
+   both the web process (via ``app.main._load_components``) and the worker
+   process (via ``app.core.tasks._register_components``). Components guard
+   ``app.include_router()`` behind ``if app is not None`` since the worker
+   has no FastAPI application. Process-global side effects (registry hooks,
+   task imports) execute in both processes.
 
 ## Frontend Rules
 
@@ -360,7 +381,7 @@ make check-config      # verify no os.getenv outside core/config.py
 These live in `boilerplate/templates/`. Activate via `make activate-component COMPONENT=<name>`:
 
 - `smtp` — Email sending via SMTP (requires Mailhog or real SMTP)
-- `file_storage` — Local/S3 file storage
+- `file_storage` — Local/S3 file storage (key-based: ``store()`` returns a UUID key, not a filesystem path)
 - `redis_cache` — Redis cache layer and rate limiter
 - `websockets` — WebSocket connection management
 - `stripe` — Stripe payment processing

@@ -33,17 +33,24 @@ async def send_test_email(
     task_pending = EmailSchema.from_request(email)
     from app.components.smtp.tasks import send_email
 
-    job = send_email.defer(
-        to=task_pending.to,
-        subject=task_pending.subject,
-        body=task_pending.body,
-    )
+    job = None
+    try:
+        job = send_email.defer(
+            to=task_pending.to,
+            subject=task_pending.subject,
+            body=task_pending.body,
+        )
+    except Exception:
+        logger.warning("send_email_defer_failed")
 
-    logger.info(
-        "email_queued",
-        to=email.to,
-        subject=email.subject,
-        job_id=str(job),
-    )
+    if job is not None:
+        logger.info(
+            "email_queued",
+            to=email.to,
+            subject=email.subject,
+            job_id=str(job),
+        )
+        return {"status": "queued", "job_id": str(job)}
 
-    return {"status": "queued", "job_id": str(job)}
+    logger.info("email_queued_no_job", to=email.to, subject=email.subject)
+    return {"status": "queued"}

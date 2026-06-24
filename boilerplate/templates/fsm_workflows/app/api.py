@@ -137,14 +137,17 @@ async def execute_transition(
 
     from app.components.fsm_workflows.tasks import execute_workflow_action
 
-    execute_workflow_action.defer(
-        workflow_name=definition.name,
-        trigger=payload.trigger,
-        from_state=states[0],
-        to_state=new_state,
-        entity_id=str(instance.entity_id),
-        entity_type=instance.entity_type,
-    )
+    try:
+        execute_workflow_action.defer(
+            workflow_name=definition.name,
+            trigger=payload.trigger,
+            from_state=states[0],
+            to_state=new_state,
+            entity_id=str(instance.entity_id),
+            entity_type=instance.entity_type,
+        )
+    except Exception:
+        logger.warning("execute_workflow_action_defer_failed", workflow_name=definition.name)
 
     logger.info(
         "workflow_transition_completed",

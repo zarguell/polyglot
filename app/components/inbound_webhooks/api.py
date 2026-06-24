@@ -9,13 +9,24 @@ from fastapi import APIRouter, Header, Request
 
 from app.components.inbound_webhooks.models import WebhookEvent
 from app.components.inbound_webhooks.schemas import WebhookResponse
-from app.components.inbound_webhooks.service import get_webhook_registry
+from app.components.inbound_webhooks.service import WebhookRegistry
 from app.components.inbound_webhooks.tasks import process_webhook_event
 from app.core.db import async_session_factory
 
 logger = structlog.get_logger()
 
 router = APIRouter(prefix="/api/webhooks", tags=["webhooks"])
+
+_registry: WebhookRegistry | None = None
+
+
+def _get_registry() -> WebhookRegistry:
+    global _registry
+    if _registry is None:
+        from app.core.config import settings
+        _registry = WebhookRegistry(default_secret=settings.webhook_secret_default)
+    return _registry
+
 
 @router.post("/{provider}")
 async def receive_webhook(
@@ -28,7 +39,7 @@ async def receive_webhook(
     The webhook is stored, verified (if a signature is present), and
     dispatched to the registered handler via a background task.
     """
-    registry = get_webhook_registry()
+    registry = _get_registry()
     payload = await request.body()
 
     # Collect headers for audit

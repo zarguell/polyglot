@@ -29,4 +29,7 @@ def clear_cache() -> None:
 @task_app.periodic(cron="0 4 * * *")
 def periodic_clear_cache() -> None:
     """Daily cache flush at 4 AM."""
-    clear_cache.defer()
+    try:
+        clear_cache.defer()
+    except Exception:
+        logger.warning("clear_cache_defer_failed")

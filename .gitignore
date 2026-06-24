@@ -22,3 +22,4 @@ app/static/react/
 .Python
 *.so
 *.egg-info/
+docs-src/site/

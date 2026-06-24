@@ -24,3 +24,4 @@ app/static/react/
 *.egg-info/
 docs-src/site/
 .omo/
+*.tsbuildinfo

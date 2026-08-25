@@ -19,7 +19,7 @@ dependencies = [
     "structlog>=24.4,<25",
     "procrastinate>=2.6,<3",
     "python-multipart>=0.0,<1",
-    "cryptography>=44,<45",
+    "cryptography>=50.0.0",
     # Procrastinate dependencies (not auto-installed on macOS)
     "aiopg>=1.4,<2",
     "psycopg2-binary>=2.9,<3",

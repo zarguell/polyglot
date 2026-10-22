@@ -32,8 +32,8 @@ dependencies = [
 
 [project.optional-dependencies]
 dev = [
-    "pytest>=8.3,<9",
-    "pytest-asyncio>=0.25,<1",
+    "pytest>=9.0.3,<10",
+    "pytest-asyncio>=1.4,<2",
     "pytest-cov>=6.0,<7",
     "httpx>=0.28,<1",
     "ruff>=0.9,<1",
@@ -66,6 +66,11 @@ quote-style = "double"
 
 [tool.pytest.ini_options]
 asyncio_mode = "auto"
+# pytest-asyncio >= 1 removed the user-overridable ``event_loop`` fixture; a single
+# session-scoped loop (shared by tests and async fixtures) keeps the module-level
+# async engine/pool bound to one loop, as the old conftest override intended.
+asyncio_default_fixture_loop_scope = "session"
+asyncio_default_test_loop_scope = "session"
 testpaths = ["tests"]
 markers = [
     "integration: marks tests that need a database",
